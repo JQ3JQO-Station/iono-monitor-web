@@ -11,12 +11,11 @@
       background: #edf1f7;
       color: #1a2838;
       font-family: -apple-system, 'Helvetica Neue', sans-serif;
-      height: 100dvh;
+      min-height: 100dvh;
       display: flex;
       flex-direction: column;
       padding: 8px;
       gap: 6px;
-      overflow: hidden;
     }
 
     /* ── Header ── */
@@ -53,8 +52,9 @@
     /* ── Japan Map ── */
     .map-wrapper {
       position: relative;
-      width: 100%;
+      width: min(100%, 50dvh);
       aspect-ratio: 1;
+      margin: 0 auto;
     }
     .map-wrapper svg {
       width: 100%;
