@@ -325,8 +325,8 @@
     function trendArrow(now, prev) {
       if (now === null || now === '--' || prev === null || prev === '--') return '—';
       const d = parseFloat(now) - parseFloat(prev);
-      if (d >  2.0) return '↑';
-      if (d < -2.0) return '↓';
+      if (d >  0.5) return '↑';
+      if (d < -0.5) return '↓';
       return '→';
     }
     function trendColor(arrow) {
