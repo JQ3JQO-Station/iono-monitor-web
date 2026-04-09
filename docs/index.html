@@ -27,6 +27,8 @@
     }
     header h1 { font-size: 1rem; font-weight: 700; color: #1a3050; }
     #update-time { font-size: 0.68rem; color: #8090a8; }
+    #obs-label { font-size: 0.58rem; opacity: 0.7; }
+    #obs-time  { font-weight: 700; color: #1a3050; }
     #reload-btn {
       font-size: 0.7rem; font-weight: 700;
       padding: 4px 10px; border-radius: 6px;
@@ -154,7 +156,7 @@
 
   <header>
     <h1>CB DX Iono Monitor</h1>
-    <div id="update-time">--:--</div>
+    <div id="update-time"><span id="obs-label">観測</span> <span id="obs-time">--:--</span></div>
     <button id="reload-btn" onclick="fetchAllData()">更新</button>
   </header>
 
@@ -375,13 +377,16 @@
       setCell('sw-f107',  f107Class(data.f107),
         data.f107 != null ? Math.round(data.f107).toString() : '--');
 
-      // Header timestamp
+      // FxEs観測時刻をヘッダーに表示
+      if (data.fxes && data.fxes.time) {
+        document.getElementById('obs-time').textContent = data.fxes.time + ' JST';
+      }
+      // 取得時刻をステータスバーに表示
       const jst = new Date(new Date(data.fetchedAt).getTime() + 9 * 3600000);
       const hh = String(jst.getUTCHours()).padStart(2, '0');
       const mm = String(jst.getUTCMinutes()).padStart(2, '0');
-      document.getElementById('update-time').textContent = hh + ':' + mm + ' JST';
       document.getElementById('status-bar').textContent =
-        '毎時更新 | Data: NICT / NOAA SWPC';
+        '取得 ' + hh + ':' + mm + ' | 15分ごと更新 | Data: NICT / NOAA SWPC';
     }
 
     // ── ブラウザ直接取得 ──────────────────────────────────────
