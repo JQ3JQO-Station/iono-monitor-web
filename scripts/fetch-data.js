@@ -46,7 +46,8 @@ function parseFxEs(html) {
 
   const isDate = s => /^\d{4}\/\d{2}\/\d{2}$/.test(s);
   const isTime = s => /^\d{2}:\d{2}$/.test(s);
-  const isFx   = s => s === '--' || /^\d+\.\d+$/.test(s);
+  const isFx   = s => /^-+$/.test(s) || /^\d+\.\d+$/.test(s);
+  const normFx = s => /^-+$/.test(s) ? '--' : s;
 
   const rows = [];
   for (let i = 0; i < tokens.length - 4; i++) {
@@ -58,8 +59,8 @@ function parseFxEs(html) {
         isFx(tokens[i+1]) && isFx(tokens[i+2]) &&
         isFx(tokens[i+3]) && isFx(tokens[i+4])) {
       rows.push({ date: d, time: t,
-        ok: tokens[i+1], yg: tokens[i+2],
-        to: tokens[i+3], wk: tokens[i+4] });
+        ok: normFx(tokens[i+1]), yg: normFx(tokens[i+2]),
+        to: normFx(tokens[i+3]), wk: normFx(tokens[i+4]) });
       i += 4;
     }
   }
