@@ -155,7 +155,7 @@
   <header>
     <h1>CB DX Iono Monitor</h1>
     <div id="update-time">--:--</div>
-    <button id="reload-btn" onclick="triggerFetch()">更新</button>
+    <button id="reload-btn" onclick="fetchAllData()">更新</button>
   </header>
 
   <!-- ── FxEs + Japan map ── -->
@@ -382,57 +382,123 @@
         '毎時更新 | Data: NICT / NOAA SWPC';
     }
 
-    // ── データ取得（CDNバイパス：raw.githubusercontent.com直接） ──
-    const RAW_URL = 'https://raw.githubusercontent.com/JQ3JQO-Station/iono-monitor-web/main/docs/data.json';
+    // ── ブラウザ直接取得 ──────────────────────────────────────
+    const PROXY    = 'https://corsproxy.io/?url=';
+    const FXES_URL = 'https://wdc.nict.go.jp/Ionosphere/realtime/fxEs/latest-fxEs.html';
+    const MUF_URL  = 'https://wdc.nict.go.jp/Ionosphere/realtime/oblver/index.html';
+    const XRAY_URL = 'https://services.swpc.noaa.gov/json/goes/primary/xrays-6-hour.json';
+    const KP_URL   = 'https://services.swpc.noaa.gov/json/planetary_k_index_1m.json';
+    const F107_URL = 'https://services.swpc.noaa.gov/json/solar-cycle/f10-7cm-flux.json';
 
-    async function loadData() {
-      try {
-        const res = await fetch(RAW_URL + '?_=' + Date.now());
-        if (!res.ok) throw new Error('HTTP ' + res.status);
-        render(await res.json());
-      } catch (e) {
-        document.getElementById('status-bar').textContent = 'データ取得失敗: ' + e.message;
+    // ── パーサー（fetch-data.jsと同等） ───────────────────────
+    function parseFxEs(html) {
+      let plain = '';
+      let inTag = false;
+      for (let i = 0; i < html.length; i++) {
+        const c = html[i];
+        if (c === '<') { inTag = true; continue; }
+        if (c === '>') { inTag = false; continue; }
+        if (inTag) continue;
+        if (c === '\r') continue;
+        if (c === '\n' || c === '\t') { plain += '\n'; continue; }
+        const code = c.charCodeAt(0);
+        plain += (code >= 32 && code <= 126) ? c : ' ';
       }
+      const tokens = plain.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+      const isDate = s => /^\d{4}\/\d{2}\/\d{2}$/.test(s);
+      const isTime = s => /^\d{2}:\d{2}$/.test(s);
+      const isFx   = s => s === '--' || /^\d+\.\d+$/.test(s);
+      const rows = [];
+      for (let i = 0; i < tokens.length - 4; i++) {
+        const sp = tokens[i].indexOf(' ');
+        if (sp <= 0) continue;
+        const d = tokens[i].substring(0, sp).trim();
+        const t = tokens[i].substring(sp + 1).trim();
+        if (isDate(d) && isTime(t) && isFx(tokens[i+1]) && isFx(tokens[i+2]) && isFx(tokens[i+3]) && isFx(tokens[i+4])) {
+          rows.push({ date: d, time: t, ok: tokens[i+1], yg: tokens[i+2], to: tokens[i+3], wk: tokens[i+4] });
+          i += 4;
+        }
+      }
+      if (rows.length === 0) return null;
+      const toMin = t => { const [h, m] = t.split(':').map(Number); return h * 60 + m; };
+      return rows.reduce((best, r) => toMin(r.time) > toMin(best.time) ? r : best, rows[0]);
     }
 
-    async function triggerFetch() {
+    function parseMuf(html) {
+      const result = { ok: null, yg: null, to: null };
+      let curStation = '', inFregion = false;
+      for (const raw of html.split('\n')) {
+        if (raw.includes('Station')) {
+          if      (raw.includes('OK426')) { curStation = 'ok'; inFregion = false; }
+          else if (raw.includes('YG431')) { curStation = 'yg'; inFregion = false; }
+          else if (raw.includes('TO536')) { curStation = 'to'; inFregion = false; }
+          else curStation = '';
+        }
+        if (raw.includes('F region')) inFregion = true;
+        if (raw.includes('E region')) inFregion = false;
+        if (inFregion && curStation && result[curStation] === null) {
+          const ln = raw.trim();
+          const c1 = ln.indexOf(',');
+          if (c1 < 0) continue;
+          const dist = parseInt(ln.substring(0, c1).trim());
+          if (dist !== { ok: 500, yg: 1000, to: 1500 }[curStation]) continue;
+          const c2 = ln.indexOf(',', c1 + 1);
+          if (c2 < 0) continue;
+          const pipeIdx = ln.indexOf('|', c2);
+          const mufStr = pipeIdx > 0 ? ln.substring(c2 + 1, pipeIdx) : ln.substring(c2 + 1, c2 + 8);
+          const v = parseFloat(mufStr.trim());
+          if (v > 0) result[curStation] = v;
+        }
+      }
+      return result;
+    }
+
+    // ── データ取得メイン ──────────────────────────────────────
+    async function fetchAllData() {
       const btn = document.getElementById('reload-btn');
       btn.textContent = '取得中…';
       btn.disabled = true;
-      const currentTime = document.getElementById('update-time').textContent;
+      document.getElementById('status-bar').textContent = 'データ取得中...';
+      const ts = '?_=' + Date.now();
       try {
-        await fetch(
-          'https://api.github.com/repos/JQ3JQO-Station/iono-monitor-web/actions/workflows/fetch-data.yml/dispatches',
-          {
-            method: 'POST',
-            headers: {
-              'Authorization': 'token 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',
-              'Accept': 'application/vnd.github.v3+json',
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ ref: 'main' })
-          }
-        );
-        // 5秒ごとに確認、データ更新を検出したら即反映（最大90秒）
-        let elapsed = 0;
-        const poll = setInterval(async () => {
-          elapsed += 5;
-          await loadData();
-          const newTime = document.getElementById('update-time').textContent;
-          if (newTime !== currentTime || elapsed >= 90) {
-            clearInterval(poll);
-            btn.textContent = '更新';
-            btn.disabled = false;
-          }
-        }, 5000);
+        const [fxesText, mufText, xrayArr, kpArr, f107Arr] = await Promise.all([
+          fetch(PROXY + encodeURIComponent(FXES_URL + ts)).then(r => r.text()),
+          fetch(PROXY + encodeURIComponent(MUF_URL  + ts)).then(r => r.text()),
+          fetch(XRAY_URL + ts).then(r => r.json()),
+          fetch(KP_URL   + ts).then(r => r.json()),
+          fetch(F107_URL + ts).then(r => r.json()),
+        ]);
+
+        const fxes = parseFxEs(fxesText);
+
+        // 前回値をlocalStorageから取得（傾向矢印用）
+        if (fxes) {
+          try {
+            const prev = JSON.parse(localStorage.getItem('fxes_prev') || 'null');
+            if (prev && prev.time !== fxes.time) {
+              for (const k of ['ok', 'yg', 'to', 'wk']) fxes[k + '_prev'] = prev[k] ?? null;
+            }
+          } catch(e) {}
+          localStorage.setItem('fxes_prev', JSON.stringify({ time: fxes.time, ok: fxes.ok, yg: fxes.yg, to: fxes.to, wk: fxes.wk }));
+        }
+
+        // NOAA パース
+        let xray = null, kp = null, f107 = null;
+        for (let i = xrayArr.length - 1; i >= 0; i--) { if (xrayArr[i].flux > 0) { xray = xrayArr[i].flux; break; } }
+        for (let i = kpArr.length   - 1; i >= 0; i--) { if (kpArr[i].kp_index >= 0) { kp = kpArr[i].kp_index; break; } }
+        for (let i = f107Arr.length - 1; i >= 0; i--) { const v = f107Arr[i]['f10.7'] ?? f107Arr[i].flux; if (v > 0) { f107 = v; break; } }
+
+        render({ fetchedAt: new Date().toISOString(), fxes, muf: parseMuf(mufText), xray, kp, f107 });
+        document.getElementById('status-bar').textContent = '15分ごと更新 | Data: NICT / NOAA SWPC';
       } catch (e) {
-        btn.textContent = '更新';
-        btn.disabled = false;
+        document.getElementById('status-bar').textContent = '取得失敗: ' + e.message;
       }
+      btn.textContent = '更新';
+      btn.disabled = false;
     }
 
-    loadData();
-    setInterval(loadData, 5 * 60 * 1000);
+    fetchAllData();
+    setInterval(fetchAllData, 15 * 60 * 1000);
   </script>
 </body>
 </html>
