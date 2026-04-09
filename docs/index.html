@@ -398,6 +398,8 @@
       const btn = document.getElementById('reload-btn');
       btn.textContent = '取得中…';
       btn.disabled = true;
+      // 現在のfetchedAtを記憶
+      const currentFetchedAt = document.getElementById('update-time').textContent;
       try {
         await fetch(
           'https://api.github.com/repos/JQ3JQO-Station/iono-monitor-web/actions/workflows/fetch-data.yml/dispatches',
@@ -411,9 +413,19 @@
             body: JSON.stringify({ ref: 'main' })
           }
         );
-        // ワークフロー完了を待って再読み込み（約40秒）
-        setTimeout(() => { loadData(); }, 40000);
-        setTimeout(() => { btn.textContent = '更新'; btn.disabled = false; }, 40000);
+        // 新しいデータが来るまで10秒ごとにポーリング（最大120秒）
+        let elapsed = 0;
+        const poll = setInterval(async () => {
+          elapsed += 10;
+          const newTime = document.getElementById('update-time').textContent;
+          await loadData();
+          const updatedTime = document.getElementById('update-time').textContent;
+          if (updatedTime !== currentFetchedAt || elapsed >= 120) {
+            clearInterval(poll);
+            btn.textContent = '更新';
+            btn.disabled = false;
+          }
+        }, 10000);
       } catch (e) {
         btn.textContent = '更新';
         btn.disabled = false;
