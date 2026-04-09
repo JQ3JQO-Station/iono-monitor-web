@@ -155,7 +155,7 @@
   <header>
     <h1>CB DX Iono Monitor</h1>
     <div id="update-time">--:--</div>
-    <button id="reload-btn" onclick="loadData()">更新</button>
+    <button id="reload-btn" onclick="triggerFetch()">更新</button>
   </header>
 
   <!-- ── FxEs + Japan map ── -->
@@ -393,6 +393,32 @@
       }
     }
 
+
+    async function triggerFetch() {
+      const btn = document.getElementById('reload-btn');
+      btn.textContent = '取得中…';
+      btn.disabled = true;
+      try {
+        await fetch(
+          'https://api.github.com/repos/JQ3JQO-Station/iono-monitor-web/actions/workflows/fetch-data.yml/dispatches',
+          {
+            method: 'POST',
+            headers: {
+              'Authorization': 'token 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',
+              'Accept': 'application/vnd.github.v3+json',
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ ref: 'main' })
+          }
+        );
+        // ワークフロー完了を待って再読み込み（約40秒）
+        setTimeout(() => { loadData(); }, 40000);
+        setTimeout(() => { btn.textContent = '更新'; btn.disabled = false; }, 40000);
+      } catch (e) {
+        btn.textContent = '更新';
+        btn.disabled = false;
+      }
+    }
 
     loadData();
     setInterval(loadData, 5 * 60 * 1000);
