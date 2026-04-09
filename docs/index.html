@@ -211,7 +211,6 @@
       </div>
 
     </div>
-    <div class="obs-time" id="fxes-time"></div>
   </div>
 
   <!-- ── MUF ── -->
@@ -352,9 +351,6 @@
         const arrow = trendArrow(raw, prev);
         setMarker('map-' + k, fxesClass(raw), val, arrow);
       }
-      if (fxes)
-        document.getElementById('fxes-time').textContent =
-          'データ時刻 ' + fxes.date + ' ' + fxes.time + ' JST';
 
       // MUF
       const muf = data.muf || {};
@@ -372,10 +368,10 @@
       // Header timestamp
       const jst = new Date(new Date(data.fetchedAt).getTime() + 9 * 3600000);
       const hh = String(jst.getUTCHours()).padStart(2, '0');
-      const nextHh = String((jst.getUTCHours() + 1) % 24).padStart(2, '0');
-      document.getElementById('update-time').textContent = hh + ':00 取得 / 次回 ' + nextHh + ':00 JST';
+      const mm = String(jst.getUTCMinutes()).padStart(2, '0');
+      document.getElementById('update-time').textContent = hh + ':' + mm + ' JST';
       document.getElementById('status-bar').textContent =
-        '毎時00分自動更新 | Data: NICT / NOAA SWPC';
+        '毎時更新 | Data: NICT / NOAA SWPC';
     }
 
     // ── Fetch loop ────────────────────────────────────────────
