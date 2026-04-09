@@ -144,10 +144,23 @@ async function main() {
   console.log(`[${new Date().toISOString()}] fetch-data start`);
   const result = { fetchedAt: new Date().toISOString() };
 
+  // 前回データ読み込み（トレンド計算用）
+  let prevFxes = null;
+  try {
+    const prevPath = path.join(__dirname, '..', 'docs', 'data.json');
+    const prevData = JSON.parse(fs.readFileSync(prevPath, 'utf8'));
+    prevFxes = prevData.fxes ?? null;
+  } catch (e) { /* 初回は無視 */ }
+
   // FxEs
   try {
     const html = await fetchUrl('https://wdc.nict.go.jp/Ionosphere/realtime/fxEs/latest-fxEs.html');
     result.fxes = parseFxEs(html);
+    // 前回値を付加（トレンド計算用）
+    if (result.fxes && prevFxes) {
+      for (const k of ['ok', 'yg', 'to', 'wk'])
+        result.fxes[k + '_prev'] = prevFxes[k] ?? null;
+    }
     console.log('FxEs:', result.fxes);
   } catch (e) {
     console.error('FxEs error:', e.message);

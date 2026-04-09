@@ -79,18 +79,27 @@
       z-index: 10;
     }
     .marker-badge {
-      border-radius: 8px;
-      padding: 6px 14px;
-      text-align: center;
-      box-shadow: 0 1px 5px rgba(0,0,0,0.18);
-      white-space: nowrap;
+      width: 62px;
+      height: 62px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.22);
     }
     .marker-name { display: none; }
     .marker-val {
-      font-size: 1.76rem;
+      font-size: 1.5rem;
       font-weight: 800;
-      display: block;
-      line-height: 1.15;
+      line-height: 1;
+      white-space: nowrap;
+    }
+    .marker-trend {
+      font-size: 1rem;
+      font-weight: 700;
+      text-align: center;
+      margin-top: 2px;
+      line-height: 1;
     }
     .marker-pip { display: none; }
 
@@ -177,10 +186,9 @@
 
       <div class="map-marker" id="map-ok" style="left:29.1%;top:25.2%">
         <div class="marker-badge col-gray">
-          <span class="marker-name">沖縄</span>
           <span class="marker-val">--</span>
         </div>
-        <div class="marker-pip col-gray"></div>
+        <div class="marker-trend">—</div>
       </div>
 
       <div class="map-marker" id="map-yg" style="left:17.4%;top:90.6%">
@@ -312,11 +320,25 @@
     function recolor(el, cls) {
       el.className = el.className.replace(/col-\w+/g, cls);
     }
-    function setMarker(id, cls, val) {
+    function trendArrow(now, prev) {
+      if (now === null || now === '--' || prev === null || prev === '--') return '—';
+      const d = parseFloat(now) - parseFloat(prev);
+      if (d >  0.3) return '↑';
+      if (d < -0.3) return '↓';
+      return '→';
+    }
+    function trendColor(arrow) {
+      if (arrow === '↑') return '#c02020';
+      if (arrow === '↓') return '#0070b0';
+      return '#8090a8';
+    }
+    function setMarker(id, cls, val, arrow) {
       const el = document.getElementById(id);
       recolor(el.querySelector('.marker-badge'), cls);
-      recolor(el.querySelector('.marker-pip'),   cls);
       el.querySelector('.marker-val').textContent = val;
+      const t = el.querySelector('.marker-trend');
+      t.textContent = arrow ?? '—';
+      t.style.color = trendColor(arrow);
     }
     function setCell(id, cls, val) {
       const el = document.getElementById(id);
@@ -329,9 +351,11 @@
       // FxEs markers
       const fxes = data.fxes;
       for (const k of ['ok', 'yg', 'to', 'wk']) {
-        const raw = fxes ? fxes[k] : null;
-        const val = (raw && raw !== '--') ? parseFloat(raw).toFixed(1) : '--';
-        setMarker('map-' + k, fxesClass(raw), val);
+        const raw  = fxes ? fxes[k]          : null;
+        const prev = fxes ? fxes[k + '_prev'] : null;
+        const val  = (raw && raw !== '--') ? parseFloat(raw).toFixed(1) : '--';
+        const arrow = trendArrow(raw, prev);
+        setMarker('map-' + k, fxesClass(raw), val, arrow);
       }
       if (fxes)
         document.getElementById('fxes-time').textContent =
