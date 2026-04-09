@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Color Sample</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: #edf1f7; font-family: -apple-system, sans-serif; padding: 12px; }
+h2 { font-size: 0.75rem; color: #556; margin: 14px 0 6px; text-transform: uppercase; letter-spacing: .08em; }
+.row { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 4px; }
+.cell {
+  width: 80px; height: 64px;
+  border-radius: 8px;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 2px;
+}
+.cell .val  { font-size: 1.4rem; font-weight: 800; line-height: 1; }
+.cell .lbl  { font-size: 0.5rem; font-weight: 700; opacity: .7; }
+.cell .code { font-size: 0.42rem; opacity: .5; }
+.tag { font-size: 0.55rem; color:#556; align-self:center; padding: 0 4px; }
+
+/* ── 現行 ── */
+.cur-green  { background:#c8f0d8; color:#0a6a30; }
+.cur-yellow { background:#fff0a0; color:#7a4a00; }
+.cur-orange { background:#ffd080; color:#8a3000; }
+.cur-red    { background:#ffb0b0; color:#b00000; }
+
+/* ── 案A: 彩度UP・明度DOWN ── */
+.a-green  { background:#7dd87a; color:#0a3a0a; }
+.a-yellow { background:#ffe030; color:#4a3000; }
+.a-orange { background:#ff9020; color:#5a1800; }
+.a-red    { background:#ff4040; color:#fff; }
+
+/* ── 案B: 深みのある落ち着いた強調色 ── */
+.b-green  { background:#34c76a; color:#fff; }
+.b-yellow { background:#f0c000; color:#3a2800; }
+.b-orange { background:#e06800; color:#fff; }
+.b-red    { background:#cc1c1c; color:#fff; }
+
+/* ── 案C: ネオン系・視認性重視 ── */
+.c-green  { background:#00d080; color:#003820; }
+.c-yellow { background:#ffd000; color:#3a2800; }
+.c-orange { background:#ff6600; color:#fff; }
+.c-red    { background:#ff1a1a; color:#fff; }
+
+/* ── 案D: 案Aと案Bの中間（おすすめ） ── */
+.d-green  { background:#50d87a; color:#083818; }
+.d-yellow { background:#f8d020; color:#3a2800; }
+.d-orange { background:#f07018; color:#fff; }
+.d-red    { background:#e03030; color:#fff; }
+</style>
+</head>
+<body>
+
+<h2>現行（淡い）</h2>
+<div class="row">
+  <div class="cell cur-green" ><div class="val">14.2</div><div class="lbl">MUF</div><div class="code">#c8f0d8</div></div>
+  <div class="cell cur-yellow"><div class="val">21.5</div><div class="lbl">MUF≥20</div><div class="code">#fff0a0</div></div>
+  <div class="cell cur-orange"><div class="val">26.3</div><div class="lbl">MUF≥25</div><div class="code">#ffd080</div></div>
+  <div class="cell cur-red"   ><div class="val">X1.2</div><div class="lbl">Xray X</div><div class="code">#ffb0b0</div></div>
+</div>
+
+<h2>案A — 彩度UP・明度DOWN</h2>
+<div class="row">
+  <div class="cell a-green" ><div class="val">14.2</div><div class="lbl">MUF</div><div class="code">#7dd87a</div></div>
+  <div class="cell a-yellow"><div class="val">21.5</div><div class="lbl">MUF≥20</div><div class="code">#ffe030</div></div>
+  <div class="cell a-orange"><div class="val">26.3</div><div class="lbl">MUF≥25</div><div class="code">#ff9020</div></div>
+  <div class="cell a-red"   ><div class="val">X1.2</div><div class="lbl">Xray X</div><div class="code">#ff4040</div></div>
+</div>
+
+<h2>案B — 深みのある落ち着いた強調色</h2>
+<div class="row">
+  <div class="cell b-green" ><div class="val">14.2</div><div class="lbl">MUF</div><div class="code">#34c76a</div></div>
+  <div class="cell b-yellow"><div class="val">21.5</div><div class="lbl">MUF≥20</div><div class="code">#f0c000</div></div>
+  <div class="cell b-orange"><div class="val">26.3</div><div class="lbl">MUF≥25</div><div class="code">#e06800</div></div>
+  <div class="cell b-red"   ><div class="val">X1.2</div><div class="lbl">Xray X</div><div class="code">#cc1c1c</div></div>
+</div>
+
+<h2>案C — ネオン系・視認性重視</h2>
+<div class="row">
+  <div class="cell c-green" ><div class="val">14.2</div><div class="lbl">MUF</div><div class="code">#00d080</div></div>
+  <div class="cell c-yellow"><div class="val">21.5</div><div class="lbl">MUF≥20</div><div class="code">#ffd000</div></div>
+  <div class="cell c-orange"><div class="val">26.3</div><div class="lbl">MUF≥25</div><div class="code">#ff6600</div></div>
+  <div class="cell c-red"   ><div class="val">X1.2</div><div class="lbl">Xray X</div><div class="code">#ff1a1a</div></div>
+</div>
+
+<h2>案D — 中間バランス（おすすめ）</h2>
+<div class="row">
+  <div class="cell d-green" ><div class="val">14.2</div><div class="lbl">MUF</div><div class="code">#50d87a</div></div>
+  <div class="cell d-yellow"><div class="val">21.5</div><div class="lbl">MUF≥20</div><div class="code">#f8d020</div></div>
+  <div class="cell d-orange"><div class="val">26.3</div><div class="lbl">MUF≥25</div><div class="code">#f07018</div></div>
+  <div class="cell d-red"   ><div class="val">X1.2</div><div class="lbl">Xray X</div><div class="code">#e03030</div></div>
+</div>
+
+</body>
+</html>
