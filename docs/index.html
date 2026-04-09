@@ -391,6 +391,9 @@
     const F107_URL = 'https://services.swpc.noaa.gov/json/solar-cycle/f10-7cm-flux.json';
 
     // ── パーサー（fetch-data.jsと同等） ───────────────────────
+    // ESP32スケッチ fetchFxEsData() と同一ロジック
+    // ・全行を取得し、最新行と直前行を特定してtrend計算
+    // ・isFxToken: "-", "---", "----" および数値を受け入れ（時刻で行を特定し値は後付け）
     function parseFxEs(html) {
       let plain = '';
       let inTag = false;
@@ -405,27 +408,61 @@
         plain += (code >= 32 && code <= 126) ? c : ' ';
       }
       const tokens = plain.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+
       const isDate = s => /^\d{4}\/\d{2}\/\d{2}$/.test(s);
       const isTime = s => /^\d{2}:\d{2}$/.test(s);
-      // "----" も有効（観測なし）として受け入れる
-      const isFx   = s => /^-+$/.test(s) || /^\d+\.\d+$/.test(s);
-      const normFx = s => /^-+$/.test(s) ? '--' : s;  // "----" → "--" に正規化
+      // ESP32 isFxToken: "-", "---", "----" と数値を受け入れ
+      const isFx   = s => /^-+$/.test(s) || /^\d*\.?\d+$/.test(s);
+      // "----"系 → null（観測なし）、数値 → float、それ以外 → null
+      const toVal  = s => /^-+$/.test(s) ? null : parseFloat(s);
+
+      // 全行をパース（時刻でアンカー、次の4トークンを値として取る）
       const rows = [];
       for (let i = 0; i < tokens.length - 4; i++) {
         const sp = tokens[i].indexOf(' ');
         if (sp <= 0) continue;
         const d = tokens[i].substring(0, sp).trim();
         const t = tokens[i].substring(sp + 1).trim();
-        if (isDate(d) && isTime(t) && isFx(tokens[i+1]) && isFx(tokens[i+2]) && isFx(tokens[i+3]) && isFx(tokens[i+4])) {
+        if (isDate(d) && isTime(t) &&
+            isFx(tokens[i+1]) && isFx(tokens[i+2]) &&
+            isFx(tokens[i+3]) && isFx(tokens[i+4])) {
           rows.push({ date: d, time: t,
-            ok: normFx(tokens[i+1]), yg: normFx(tokens[i+2]),
-            to: normFx(tokens[i+3]), wk: normFx(tokens[i+4]) });
+            ok: toVal(tokens[i+1]), yg: toVal(tokens[i+2]),
+            to: toVal(tokens[i+3]), wk: toVal(tokens[i+4]) });
           i += 4;
         }
       }
       if (rows.length === 0) return null;
+
       const toMin = t => { const [h, m] = t.split(':').map(Number); return h * 60 + m; };
-      return rows.reduce((best, r) => toMin(r.time) > toMin(best.time) ? r : best, rows[0]);
+
+      // 最新行を特定（ESP32: latestMin）
+      let latestIdx = 0, latestMin = -1;
+      for (let i = 0; i < rows.length; i++) {
+        const m = toMin(rows[i].time);
+        if (m > latestMin) { latestMin = m; latestIdx = i; }
+      }
+
+      // 直前行を特定（ESP32: oldIdx = 最小のgap > 0）
+      let oldIdx = latestIdx, bestGap = 9999;
+      for (let i = 0; i < rows.length; i++) {
+        if (i === latestIdx) continue;
+        const gap = latestMin - toMin(rows[i].time);
+        if (gap > 0 && gap < bestGap) { bestGap = gap; oldIdx = i; }
+      }
+
+      const latest = rows[latestIdx];
+      const old    = rows[oldIdx];
+
+      // _prev に直前行の値を付加（trend計算用）
+      for (const k of ['ok', 'yg', 'to', 'wk'])
+        latest[k + '_prev'] = (oldIdx !== latestIdx) ? old[k] : null;
+
+      // 表示用に null → '--'、数値 → 文字列
+      for (const k of ['ok', 'yg', 'to', 'wk'])
+        latest[k] = latest[k] != null ? latest[k].toFixed(1) : '--';
+
+      return latest;
     }
 
     function parseMuf(html) {
@@ -473,26 +510,8 @@
           fetch(F107_URL + ts).then(r => r.json()),
         ]);
 
+        // parseFxEs内で最新行と直前行を比較済み（ESP32と同一ロジック）
         const fxes = parseFxEs(fxesText);
-
-        // 前回値をlocalStorageから取得（傾向矢印用）
-        // prev は「ひとつ前の観測時刻の値」を保持し、データ時刻が変わった時だけ更新する
-        if (fxes) {
-          try {
-            const prev = JSON.parse(localStorage.getItem('fxes_prev') || 'null');
-            if (prev) {
-              // データ時刻が変わった→prevを矢印計算に使い、新しい値でprevを更新
-              // データ時刻が同じ →prevをそのまま矢印計算に使う（更新はしない）
-              for (const k of ['ok', 'yg', 'to', 'wk']) fxes[k + '_prev'] = prev[k] ?? null;
-              if (prev.time !== fxes.time) {
-                localStorage.setItem('fxes_prev', JSON.stringify({ time: fxes.time, ok: fxes.ok, yg: fxes.yg, to: fxes.to, wk: fxes.wk }));
-              }
-            } else {
-              // 初回：現在値をprevとして保存（次回更新時に比較できる）
-              localStorage.setItem('fxes_prev', JSON.stringify({ time: fxes.time, ok: fxes.ok, yg: fxes.yg, to: fxes.to, wk: fxes.wk }));
-            }
-          } catch(e) {}
-        }
 
         // NOAA パース
         let xray = null, kp = null, f107 = null;
