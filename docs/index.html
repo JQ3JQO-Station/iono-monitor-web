@@ -11,8 +11,12 @@
       background: #edf1f7;
       color: #1a2838;
       font-family: -apple-system, 'Helvetica Neue', sans-serif;
-      min-height: 100vh;
-      padding: 12px;
+      height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      padding: 8px;
+      gap: 6px;
+      overflow: hidden;
     }
 
     /* ── Header ── */
@@ -20,7 +24,7 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 10px;
+      flex-shrink: 0;
     }
     header h1 { font-size: 1rem; font-weight: 700; color: #1a3050; }
     #update-time { font-size: 0.68rem; color: #8090a8; }
@@ -30,25 +34,33 @@
       background: #fff;
       border-radius: 12px;
       box-shadow: 0 1px 4px rgba(0,20,60,0.10), 0 0 0 1px rgba(0,20,60,0.05);
-      padding: 12px;
-      margin-bottom: 10px;
+      padding: 8px 10px;
+      flex-shrink: 0;
+    }
+    .card-fxes {
+      flex-shrink: 1;
+      min-height: 0;
     }
     .card-title {
-      font-size: 0.6rem;
+      font-size: 0.58rem;
       font-weight: 700;
       color: #8090a8;
       letter-spacing: 0.1em;
       text-transform: uppercase;
-      margin-bottom: 10px;
+      margin-bottom: 6px;
     }
 
     /* ── Japan Map ── */
     .map-wrapper {
       position: relative;
+      /* 正方形を維持しつつ高さを viewport に合わせて制限 */
+      width: min(100%, 42dvh);
+      aspect-ratio: 1;
+      margin: 0 auto;
     }
     .map-wrapper svg {
       width: 100%;
-      height: auto;
+      height: 100%;
       display: block;
     }
     .island {
@@ -73,6 +85,7 @@
       padding: 6px 14px;
       text-align: center;
       box-shadow: 0 1px 5px rgba(0,0,0,0.18);
+      white-space: nowrap;
     }
     .marker-name {
       font-size: 0.96rem;
@@ -97,13 +110,13 @@
     }
     .data-cell {
       border-radius: 8px;
-      padding: 10px 4px;
+      padding: 7px 4px;
       text-align: center;
     }
-    .cell-label { font-size: 0.58rem; font-weight: 700; }
-    .cell-sub   { font-size: 0.5rem; opacity: 0.55; margin: 1px 0 4px; }
-    .cell-val   { font-size: 1.25rem; font-weight: 800; line-height: 1; }
-    .cell-unit  { font-size: 0.5rem; opacity: 0.65; margin-top: 2px; }
+    .cell-label { font-size: 0.55rem; font-weight: 700; }
+    .cell-sub   { font-size: 0.48rem; opacity: 0.55; margin: 1px 0 2px; }
+    .cell-val   { font-size: 1.1rem; font-weight: 800; line-height: 1; }
+    .cell-unit  { font-size: 0.48rem; opacity: 0.65; margin-top: 1px; }
 
     /* ── Color palette (light) ── */
     .col-gray   { background: #f0f3f7; color: #8090a8; }
@@ -116,16 +129,16 @@
 
     /* ── Footer ── */
     .obs-time {
-      font-size: 0.58rem;
+      font-size: 0.52rem;
       color: #a8b8c8;
       text-align: right;
-      margin-top: 8px;
+      margin-top: 4px;
     }
     #status-bar {
-      font-size: 0.6rem;
+      font-size: 0.55rem;
       color: #a8b8c8;
       text-align: center;
-      padding: 4px 0 8px;
+      flex-shrink: 0;
     }
   </style>
 </head>
@@ -137,7 +150,7 @@
   </header>
 
   <!-- ── FxEs + Japan map ── -->
-  <div class="card">
+  <div class="card card-fxes">
     <div class="card-title">FxEs — Sporadic E</div>
     <div class="map-wrapper">
 
