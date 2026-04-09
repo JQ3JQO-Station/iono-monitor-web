@@ -27,6 +27,13 @@
     }
     header h1 { font-size: 1rem; font-weight: 700; color: #1a3050; }
     #update-time { font-size: 0.68rem; color: #8090a8; }
+    #reload-btn {
+      font-size: 0.7rem; font-weight: 700;
+      padding: 4px 10px; border-radius: 6px;
+      border: none; background: #3a7bd5; color: #fff;
+      cursor: pointer;
+    }
+    #reload-btn:active { background: #2a5ba5; }
 
     /* ── Cards ── */
     .card {
@@ -148,6 +155,7 @@
   <header>
     <h1>CB DX Iono Monitor</h1>
     <div id="update-time">--:--</div>
+    <button id="reload-btn" onclick="loadData()">更新</button>
   </header>
 
   <!-- ── FxEs + Japan map ── -->
