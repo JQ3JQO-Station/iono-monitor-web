@@ -527,7 +527,6 @@
         for (let i = f107Arr.length - 1; i >= 0; i--) { const v = f107Arr[i]['f10.7'] ?? f107Arr[i].flux; if (v > 0) { f107 = v; break; } }
 
         render({ fetchedAt: new Date().toISOString(), fxes, muf: parseMuf(mufText), xray, kp, f107 });
-        document.getElementById('status-bar').textContent = '15分ごと更新 | Data: NICT / NOAA SWPC';
       } catch (e) {
         document.getElementById('status-bar').textContent = '取得失敗: ' + e.message;
       }
