@@ -279,7 +279,7 @@
     }
     function mufClass(v) {
       if (v == null || v <= 0) return 'col-gray';
-      if (v >= 25.0) return 'col-red';
+      if (v >= 25.0) return 'col-orange';
       if (v >= 20.0) return 'col-yellow';
       return 'col-green';
     }
@@ -318,8 +318,8 @@
     function trendArrow(now, prev) {
       if (now === null || now === '--' || prev === null || prev === '--') return '—';
       const d = parseFloat(now) - parseFloat(prev);
-      if (d >  0.3) return '↑';
-      if (d < -0.3) return '↓';
+      if (d >  0.5) return '↑';
+      if (d < -0.5) return '↓';
       return '→';
     }
     function trendColor(arrow) {
