@@ -382,10 +382,12 @@
         '毎時更新 | Data: NICT / NOAA SWPC';
     }
 
-    // ── Fetch loop ────────────────────────────────────────────
+    // ── データ取得（CDNバイパス：raw.githubusercontent.com直接） ──
+    const RAW_URL = 'https://raw.githubusercontent.com/JQ3JQO-Station/iono-monitor-web/main/docs/data.json';
+
     async function loadData() {
       try {
-        const res = await fetch('data.json?_=' + Date.now());
+        const res = await fetch(RAW_URL + '?_=' + Date.now());
         if (!res.ok) throw new Error('HTTP ' + res.status);
         render(await res.json());
       } catch (e) {
@@ -393,13 +395,11 @@
       }
     }
 
-
     async function triggerFetch() {
       const btn = document.getElementById('reload-btn');
       btn.textContent = '取得中…';
       btn.disabled = true;
-      // 現在のfetchedAtを記憶
-      const currentFetchedAt = document.getElementById('update-time').textContent;
+      const currentTime = document.getElementById('update-time').textContent;
       try {
         await fetch(
           'https://api.github.com/repos/JQ3JQO-Station/iono-monitor-web/actions/workflows/fetch-data.yml/dispatches',
@@ -413,19 +413,18 @@
             body: JSON.stringify({ ref: 'main' })
           }
         );
-        // 新しいデータが来るまで10秒ごとにポーリング（最大120秒）
+        // 5秒ごとに確認、データ更新を検出したら即反映（最大90秒）
         let elapsed = 0;
         const poll = setInterval(async () => {
-          elapsed += 10;
-          const newTime = document.getElementById('update-time').textContent;
+          elapsed += 5;
           await loadData();
-          const updatedTime = document.getElementById('update-time').textContent;
-          if (updatedTime !== currentFetchedAt || elapsed >= 120) {
+          const newTime = document.getElementById('update-time').textContent;
+          if (newTime !== currentTime || elapsed >= 90) {
             clearInterval(poll);
             btn.textContent = '更新';
             btn.disabled = false;
           }
-        }, 10000);
+        }, 5000);
       } catch (e) {
         btn.textContent = '更新';
         btn.disabled = false;
