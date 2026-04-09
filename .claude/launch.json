@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "Static Site (docs/)",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": ["-m", "http.server", "3000", "--directory", "docs"],
+      "port": 3000
+    },
+    {
+      "name": "Data Fetcher (one-shot)",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["scripts/fetch-data.js"],
+      "port": 0
+    }
+  ]
+}

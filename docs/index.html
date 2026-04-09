@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <title>CB DX Iono Monitor</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #edf1f7;
+      color: #1a2838;
+      font-family: -apple-system, 'Helvetica Neue', sans-serif;
+      min-height: 100vh;
+      padding: 12px;
+    }
+
+    /* ── Header ── */
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+    header h1 { font-size: 1rem; font-weight: 700; color: #1a3050; }
+    #update-time { font-size: 0.68rem; color: #8090a8; }
+
+    /* ── Cards ── */
+    .card {
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 1px 4px rgba(0,20,60,0.10), 0 0 0 1px rgba(0,20,60,0.05);
+      padding: 12px;
+      margin-bottom: 10px;
+    }
+    .card-title {
+      font-size: 0.6rem;
+      font-weight: 700;
+      color: #8090a8;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      margin-bottom: 10px;
+    }
+
+    /* ── Japan Map ── */
+    .map-wrapper {
+      position: relative;
+    }
+    .map-wrapper svg {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
+    .island {
+      fill: #dbe4ce;
+      stroke: #b0bca0;
+      stroke-width: 3px;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    /* Station marker */
+    .map-marker {
+      position: absolute;
+      transform: translate(-50%, -50%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      z-index: 10;
+    }
+    .marker-badge {
+      border-radius: 8px;
+      padding: 6px 14px;
+      text-align: center;
+      box-shadow: 0 1px 5px rgba(0,0,0,0.18);
+    }
+    .marker-name {
+      font-size: 0.96rem;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      display: block;
+      opacity: 0.75;
+    }
+    .marker-val {
+      font-size: 1.76rem;
+      font-weight: 800;
+      display: block;
+      line-height: 1.15;
+    }
+    .marker-pip { display: none; }
+
+    /* ── 3-column grid (MUF / SW) ── */
+    .three-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+    }
+    .data-cell {
+      border-radius: 8px;
+      padding: 10px 4px;
+      text-align: center;
+    }
+    .cell-label { font-size: 0.58rem; font-weight: 700; }
+    .cell-sub   { font-size: 0.5rem; opacity: 0.55; margin: 1px 0 4px; }
+    .cell-val   { font-size: 1.25rem; font-weight: 800; line-height: 1; }
+    .cell-unit  { font-size: 0.5rem; opacity: 0.65; margin-top: 2px; }
+
+    /* ── Color palette (light) ── */
+    .col-gray   { background: #f0f3f7; color: #8090a8; }
+    .col-cyan   { background: #e0f3ff; color: #006fa8; }
+    .col-green  { background: #e4f7ed; color: #0a7a3a; }
+    .col-yellow { background: #fff6d8; color: #8a5800; }
+    .col-orange { background: #fff0d8; color: #a84000; }
+    .col-pink   { background: #ffe4f2; color: #b8005a; }
+    .col-red    { background: #ffe4e4; color: #c02020; }
+
+    /* ── Footer ── */
+    .obs-time {
+      font-size: 0.58rem;
+      color: #a8b8c8;
+      text-align: right;
+      margin-top: 8px;
+    }
+    #status-bar {
+      font-size: 0.6rem;
+      color: #a8b8c8;
+      text-align: center;
+      padding: 4px 0 8px;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>CB DX Iono Monitor</h1>
+    <div id="update-time">--:--</div>
+  </header>
+
+  <!-- ── FxEs + Japan map ── -->
+  <div class="card">
+    <div class="card-title">FxEs — Sporadic E</div>
+    <div class="map-wrapper">
+
+      <!--
+        japan-map.svg を inline 展開（viewBox="0 0 424.69 424.87"）
+        島の対応:
+          element5 (upper-right rect)        → 北海道
+          element4 (center L-shape)          → 本州
+          element3 (lower-center rect)       → 四国
+          element2 (lower-left path)         → 九州
+          element1 (upper-left small path)   → 沖縄（模式配置）
+        マーカー位置:
+          沖縄   element1 center ≈ (94, 90)  → 22.1% 21.2%
+          鹿児島 element2 南部   ≈ (44,385)  → 10.4% 90.6%
+          東京   element4 右上   ≈ (330,205) → 77.7% 48.2%
+          北海道 element5 center ≈ (363, 52) → 85.5% 12.2%
+      -->
+      <svg viewBox="0 0 424.69 424.87" xmlns="http://www.w3.org/2000/svg">
+        <!-- Sea background -->
+        <rect width="424.69" height="424.87" fill="#c4d8ea"/>
+        <!-- 沖縄（模式） -->
+        <path class="island" d="M124.91,55.12l-7.07-7.07c-2.06-2.06-5.39-2.06-7.45,0l-13.85,13.85c-1.92,1.92-5,2.07-7.09.33l-1.7-1.41c-2.24-1.86-5.56-1.55-7.42.69l-1.73,2.09c-1.86,2.24-1.55,5.56.69,7.42h0c2.39,1.98,2.55,5.59.36,7.78l-18.41,18.41v21.71c0,2.91,2.36,5.27,5.27,5.27h6.94c2.91,0,5.27-2.36,5.27-5.27v-7.97c0-1.4.56-2.74,1.54-3.73l44.65-44.65c2.06-2.06,2.06-5.39,0-7.45Z"/>
+        <!-- 九州 -->
+        <path class="island" d="M79.63,422.87H27.31c-4.6,0-8.32-3.73-8.32-8.32v-55.3c0-3.51-2.2-6.64-5.5-7.83l-5.98-2.15c-3.3-1.19-5.5-4.32-5.5-7.83v-36.36c0-4.6,3.73-8.32,8.32-8.32h69.31c4.6,0,8.32,3.73,8.32,8.32v109.47c0,4.6-3.73,8.32-8.32,8.32Z"/>
+        <!-- 四国 -->
+        <rect class="island" x="100.14" y="338.81" width="87.94" height="42.12" rx="3.75" ry="3.75"/>
+        <!-- 本州 -->
+        <path class="island" d="M373.42,157.68v166.51c0,3.35-2.72,6.06-6.06,6.06h-21.09c-3.35,0-6.06,2.72-6.06,6.06v12.93c0,3.35-2.72,6.06-6.06,6.06h-72.33c-3.35,0-6.06,2.72-6.06,6.06v12.93c0,3.35-2.72,6.06-6.06,6.06h-42.77c-3.35,0-6.06-2.72-6.06-6.06v-41.64c0-3.35-2.72-6.06-6.06-6.06h-88.66c-3.35,0-6.06-2.72-6.06-6.06v-51.5c0-3.35,2.72-6.06,6.06-6.06h143.83c3.35,0,6.06-2.72,6.06-6.06v-37.98c0-3.35,2.72-6.06,6.06-6.06h29.26c3.35,0,6.06-2.72,6.06-6.06v-76.55c0-3.35,2.72-6.06,6.06-6.06h63.88c3.35,0,6.06,2.72,6.06,6.06v27.44Z"/>
+        <!-- 北海道 -->
+        <path class="island" d="M357.94,2h56.11c4.77,0,8.64,3.87,8.64,8.64v83.23c0,4.77-3.87,8.64-8.64,8.64h-75.98c-2.24,0-4.4.87-6.01,2.43l-3.7,3.59c-1.61,1.56-3.76,2.43-6.01,2.43h-15.74c-4.77,0-8.64-3.87-8.64-8.64V10.64c0-4.77,3.87-8.64,8.64-8.64h51.33Z"/>
+      </svg>
+
+      <div class="map-marker" id="map-ok" style="left:29.1%;top:25.2%">
+        <div class="marker-badge col-gray">
+          <span class="marker-name">沖縄</span>
+          <span class="marker-val">--</span>
+        </div>
+        <div class="marker-pip col-gray"></div>
+      </div>
+
+      <div class="map-marker" id="map-yg" style="left:17.4%;top:90.6%">
+        <div class="marker-badge col-gray">
+          <span class="marker-name">鹿児島</span>
+          <span class="marker-val">--</span>
+        </div>
+        <div class="marker-pip col-gray"></div>
+      </div>
+
+      <div class="map-marker" id="map-to" style="left:77.7%;top:68.2%">
+        <div class="marker-badge col-gray">
+          <span class="marker-name">東京</span>
+          <span class="marker-val">--</span>
+        </div>
+        <div class="marker-pip col-gray"></div>
+      </div>
+
+      <div class="map-marker" id="map-wk" style="left:85.5%;top:12.2%">
+        <div class="marker-badge col-gray">
+          <span class="marker-name">北海道</span>
+          <span class="marker-val">--</span>
+        </div>
+        <div class="marker-pip col-gray"></div>
+      </div>
+
+    </div>
+    <div class="obs-time" id="fxes-time"></div>
+  </div>
+
+  <!-- ── MUF ── -->
+  <div class="card">
+    <div class="card-title">MUF — 最高使用可能周波数</div>
+    <div class="three-grid">
+      <div class="data-cell col-gray" id="muf-ok">
+        <div class="cell-label">沖縄 OK426</div>
+        <div class="cell-sub">500km</div>
+        <div class="cell-val">--</div>
+        <div class="cell-unit">MHz</div>
+      </div>
+      <div class="data-cell col-gray" id="muf-yg">
+        <div class="cell-label">鹿児島 YG431</div>
+        <div class="cell-sub">1000km</div>
+        <div class="cell-val">--</div>
+        <div class="cell-unit">MHz</div>
+      </div>
+      <div class="data-cell col-gray" id="muf-to">
+        <div class="cell-label">東京 TO536</div>
+        <div class="cell-sub">1500km</div>
+        <div class="cell-val">--</div>
+        <div class="cell-unit">MHz</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Space Weather ── -->
+  <div class="card">
+    <div class="card-title">宇宙天気</div>
+    <div class="three-grid">
+      <div class="data-cell col-gray" id="sw-xray">
+        <div class="cell-label">X線</div>
+        <div class="cell-sub">GOES</div>
+        <div class="cell-val">--</div>
+        <div class="cell-unit">flux</div>
+      </div>
+      <div class="data-cell col-gray" id="sw-kp">
+        <div class="cell-label">Kp</div>
+        <div class="cell-sub">惑星指数</div>
+        <div class="cell-val">--</div>
+        <div class="cell-unit">&nbsp;</div>
+      </div>
+      <div class="data-cell col-gray" id="sw-f107">
+        <div class="cell-label">F10.7</div>
+        <div class="cell-sub">太陽電波</div>
+        <div class="cell-val">--</div>
+        <div class="cell-unit">sfu</div>
+      </div>
+    </div>
+  </div>
+
+  <div id="status-bar">データ取得中...</div>
+
+  <script>
+    // ── Color helpers ─────────────────────────────────────────
+    function fxesClass(raw) {
+      if (!raw || raw === '--') return 'col-gray';
+      const v = parseFloat(raw);
+      if (isNaN(v))  return 'col-gray';
+      if (v >= 9.0)  return 'col-red';
+      if (v >= 8.0)  return 'col-pink';
+      if (v >= 7.0)  return 'col-yellow';
+      return 'col-cyan';
+    }
+    function mufClass(v) {
+      if (v == null || v <= 0) return 'col-gray';
+      if (v >= 25.0) return 'col-red';
+      if (v >= 20.0) return 'col-yellow';
+      return 'col-green';
+    }
+    function xrayClass(v) {
+      if (v == null) return 'col-gray';
+      if (v >= 1e-4) return 'col-red';
+      if (v >= 1e-5) return 'col-orange';
+      if (v >= 1e-6) return 'col-yellow';
+      return 'col-green';
+    }
+    function xrayLabel(v) {
+      if (v == null) return '--';
+      if (v >= 1e-4) return 'X' + (v / 1e-4).toFixed(1);
+      if (v >= 1e-5) return 'M' + (v / 1e-5).toFixed(1);
+      if (v >= 1e-6) return 'C' + (v / 1e-6).toFixed(1);
+      if (v >= 1e-7) return 'B' + (v / 1e-7).toFixed(1);
+      return 'A';
+    }
+    function kpClass(v) {
+      if (v == null) return 'col-gray';
+      if (v >= 5.0)  return 'col-red';
+      if (v >= 3.0)  return 'col-orange';
+      return 'col-green';
+    }
+    function f107Class(v) {
+      if (v == null) return 'col-gray';
+      if (v >= 180)  return 'col-red';
+      if (v >= 120)  return 'col-orange';
+      return 'col-green';
+    }
+
+    // ── DOM helpers ───────────────────────────────────────────
+    function recolor(el, cls) {
+      el.className = el.className.replace(/col-\w+/g, cls);
+    }
+    function setMarker(id, cls, val) {
+      const el = document.getElementById(id);
+      recolor(el.querySelector('.marker-badge'), cls);
+      recolor(el.querySelector('.marker-pip'),   cls);
+      el.querySelector('.marker-val').textContent = val;
+    }
+    function setCell(id, cls, val) {
+      const el = document.getElementById(id);
+      recolor(el, cls);
+      el.querySelector('.cell-val').textContent = val;
+    }
+
+    // ── Render ────────────────────────────────────────────────
+    function render(data) {
+      // FxEs markers
+      const fxes = data.fxes;
+      for (const k of ['ok', 'yg', 'to', 'wk']) {
+        const raw = fxes ? fxes[k] : null;
+        const val = (raw && raw !== '--') ? parseFloat(raw).toFixed(1) : '--';
+        setMarker('map-' + k, fxesClass(raw), val);
+      }
+      if (fxes)
+        document.getElementById('fxes-time').textContent =
+          'データ時刻 ' + fxes.date + ' ' + fxes.time + ' JST';
+
+      // MUF
+      const muf = data.muf || {};
+      for (const k of ['ok', 'yg', 'to'])
+        setCell('muf-' + k, mufClass(muf[k] ?? null),
+          muf[k] != null ? muf[k].toFixed(1) : '--');
+
+      // Space weather
+      setCell('sw-xray',  xrayClass(data.xray),  xrayLabel(data.xray));
+      setCell('sw-kp',    kpClass(data.kp),
+        data.kp  != null ? data.kp.toFixed(1)        : '--');
+      setCell('sw-f107',  f107Class(data.f107),
+        data.f107 != null ? Math.round(data.f107).toString() : '--');
+
+      // Header timestamp
+      const jst = new Date(new Date(data.fetchedAt).getTime() + 9 * 3600000);
+      const hh = String(jst.getUTCHours()).padStart(2, '0');
+      const mm = String(jst.getUTCMinutes()).padStart(2, '0');
+      document.getElementById('update-time').textContent = '更新 ' + hh + ':' + mm + ' JST';
+      document.getElementById('status-bar').textContent =
+        '5分ごと自動更新 | Data: NICT / NOAA SWPC';
+    }
+
+    // ── Fetch loop ────────────────────────────────────────────
+    async function loadData() {
+      try {
+        const res = await fetch('data.json?_=' + Date.now());
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        render(await res.json());
+      } catch (e) {
+        document.getElementById('status-bar').textContent = 'データ取得失敗: ' + e.message;
+      }
+    }
+
+    loadData();
+    setInterval(loadData, 5 * 60 * 1000);
+  </script>
+</body>
+</html>
