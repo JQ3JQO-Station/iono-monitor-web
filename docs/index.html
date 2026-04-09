@@ -155,7 +155,7 @@
   <header>
     <h1>CB DX Iono Monitor</h1>
     <div id="update-time">--:--</div>
-    <button id="reload-btn" onclick="triggerAndReload()">更新</button>
+    <button id="reload-btn" onclick="loadData()">更新</button>
   </header>
 
   <!-- ── FxEs + Japan map ── -->
@@ -393,22 +393,6 @@
       }
     }
 
-    function triggerAndReload() {
-      // GitHub Actionsを手動実行するページを開く
-      window.open(
-        'https://github.com/JQ3JQO-Station/iono-monitor-web/actions/workflows/fetch-data.yml',
-        '_blank'
-      );
-      // 30秒後に自動でデータを再読み込み
-      const btn = document.getElementById('reload-btn');
-      btn.textContent = '取得中…';
-      btn.disabled = true;
-      setTimeout(() => {
-        loadData();
-        btn.textContent = '更新';
-        btn.disabled = false;
-      }, 30000);
-    }
 
     loadData();
     setInterval(loadData, 5 * 60 * 1000);
