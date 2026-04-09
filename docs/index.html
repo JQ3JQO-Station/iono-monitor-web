@@ -53,10 +53,8 @@
     /* ── Japan Map ── */
     .map-wrapper {
       position: relative;
-      /* 正方形を維持しつつ高さを viewport に合わせて制限 */
-      width: min(100%, 42dvh);
+      width: 100%;
       aspect-ratio: 1;
-      margin: 0 auto;
     }
     .map-wrapper svg {
       width: 100%;
@@ -87,13 +85,7 @@
       box-shadow: 0 1px 5px rgba(0,0,0,0.18);
       white-space: nowrap;
     }
-    .marker-name {
-      font-size: 0.96rem;
-      font-weight: 700;
-      letter-spacing: 0.02em;
-      display: block;
-      opacity: 0.75;
-    }
+    .marker-name { display: none; }
     .marker-val {
       font-size: 1.76rem;
       font-weight: 800;
@@ -207,7 +199,7 @@
         <div class="marker-pip col-gray"></div>
       </div>
 
-      <div class="map-marker" id="map-wk" style="left:85.5%;top:12.2%">
+      <div class="map-marker" id="map-wk" style="left:78.5%;top:12.2%">
         <div class="marker-badge col-gray">
           <span class="marker-name">北海道</span>
           <span class="marker-val">--</span>
