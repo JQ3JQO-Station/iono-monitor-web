@@ -372,10 +372,10 @@
       // Header timestamp
       const jst = new Date(new Date(data.fetchedAt).getTime() + 9 * 3600000);
       const hh = String(jst.getUTCHours()).padStart(2, '0');
-      const mm = String(jst.getUTCMinutes()).padStart(2, '0');
-      document.getElementById('update-time').textContent = '更新 ' + hh + ':' + mm + ' JST';
+      const nextHh = String((jst.getUTCHours() + 1) % 24).padStart(2, '0');
+      document.getElementById('update-time').textContent = hh + ':00 取得 / 次回 ' + nextHh + ':00 JST';
       document.getElementById('status-bar').textContent =
-        '5分ごと自動更新 | Data: NICT / NOAA SWPC';
+        '毎時00分自動更新 | Data: NICT / NOAA SWPC';
     }
 
     // ── Fetch loop ────────────────────────────────────────────
