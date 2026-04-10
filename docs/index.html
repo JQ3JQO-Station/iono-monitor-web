@@ -365,7 +365,7 @@
       el.querySelector('.marker-val').textContent = val;
       const t = el.querySelector('.marker-trend');
       t.textContent = arrow ?? '—';
-      t.style.color = trendColor(arrow);
+      t.style.color = cls === 'col-red' ? '#fff' : trendColor(arrow);
     }
     function setCell(id, cls, val) {
       const el = document.getElementById(id);
