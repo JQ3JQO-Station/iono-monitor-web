@@ -412,8 +412,10 @@
     }
 
     // ── LINE アラート ─────────────────────────────────────────
-    const WORKER_URL = 'https://iono-line-alert.yotsuzeki.workers.dev';
-    const ALERT_KEY  = 'fxes_alert_sent';
+    const WORKER_URL     = 'https://iono-line-alert.yotsuzeki.workers.dev';
+    const ALERT_KEY_PRI  = 'fxes_alert_priority'; // 東京・鹿児島（LINE送信）
+    const ALERT_KEY_OTH  = 'fxes_alert_other';    // 沖縄・北海道（バナーのみ）
+    const names = { ok: '沖縄', yg: '鹿児島', to: '東京', wk: '北海道' };
 
     async function sendLineAlert(message) {
       try {
@@ -429,27 +431,32 @@
 
     function checkAlert(fxes) {
       const banner = document.getElementById('alert-banner');
-      if (!fxes) { banner.style.display = 'none'; localStorage.removeItem(ALERT_KEY); return; }
+      if (!fxes) {
+        banner.style.display = 'none';
+        localStorage.removeItem(ALERT_KEY_PRI);
+        localStorage.removeItem(ALERT_KEY_OTH);
+        return;
+      }
 
-      const names = { ok: '沖縄', yg: '鹿児島', to: '東京', wk: '北海道' };
-      const triggered = ['ok', 'yg', 'to', 'wk'].filter(k => {
-        const v = parseFloat(fxes[k]);
-        return !isNaN(v) && v >= 9.0;
-      });
+      const isOver = k => { const v = parseFloat(fxes[k]); return !isNaN(v) && v >= 9.0; };
 
-      if (triggered.length > 0) {
-        banner.style.display = 'block';
-        // localStorage にフラグがなければ送信（リロードをまたいで重複送信を防止）
-        if (!localStorage.getItem(ALERT_KEY)) {
-          localStorage.setItem(ALERT_KEY, '1');
-          const detail = triggered.map(k => `${names[k]}: ${fxes[k]}`).join(' / ');
-          const timeStr = fxes.time ?? '--:--';
-          sendLineAlert(`⚠ CB DX Iono Monitor アラート\nFxEs >= 9.0 検出\n${detail}\n観測時刻: ${timeStr} JST`);
+      // 優先地点（東京・鹿児島）→ LINE送信
+      const priTriggered = ['to', 'yg'].filter(isOver);
+      if (priTriggered.length > 0) {
+        if (!localStorage.getItem(ALERT_KEY_PRI)) {
+          localStorage.setItem(ALERT_KEY_PRI, '1');
+          const detail = priTriggered.map(k => `${names[k]}: ${fxes[k]}`).join(' / ');
+          sendLineAlert(`⚠ CB DX Iono Monitor アラート\nFxEs >= 9.0 検出\n${detail}\n観測時刻: ${fxes.time ?? '--:--'} JST`);
         }
       } else {
-        // 条件が解除されたらフラグをリセット → 次回発生時に再送可能
-        banner.style.display = 'none';
-        localStorage.removeItem(ALERT_KEY);
+        localStorage.removeItem(ALERT_KEY_PRI);
+      }
+
+      // 全地点でバナー表示判定
+      const anyTriggered = ['ok', 'yg', 'to', 'wk'].some(isOver);
+      banner.style.display = anyTriggered ? 'block' : 'none';
+      if (!anyTriggered) {
+        localStorage.removeItem(ALERT_KEY_OTH);
       }
     }
 
