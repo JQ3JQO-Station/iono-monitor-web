@@ -137,6 +137,25 @@
     .col-pink   { background: #ffc0e8; color: #a00050; }
     .col-red    { background: #e03030; color: #fff; }
 
+    /* ── Alert banner ── */
+    #alert-banner {
+      display: none;
+      background: #e03030;
+      color: #fff;
+      font-size: 0.85rem;
+      font-weight: 800;
+      text-align: center;
+      padding: 8px 12px;
+      border-radius: 10px;
+      letter-spacing: 0.05em;
+      animation: alert-blink 1s ease-in-out infinite alternate;
+      flex-shrink: 0;
+    }
+    @keyframes alert-blink {
+      from { opacity: 1; }
+      to   { opacity: 0.55; }
+    }
+
     /* ── Footer ── */
     .obs-time {
       font-size: 0.52rem;
@@ -159,6 +178,8 @@
     <div id="update-time"><span id="obs-label">観測</span> <span id="obs-time">--:--</span></div>
     <button id="reload-btn" onclick="fetchAllData()">更新</button>
   </header>
+
+  <div id="alert-banner">⚠ FxEs アラート — スポラジックE 強電離層</div>
 
   <!-- ── FxEs + Japan map ── -->
   <div class="card card-fxes">
@@ -363,6 +384,7 @@
         const arrow = trendArrow(raw, prev);
         setMarker('map-' + k, fxesClass(raw), val, arrow);
       }
+      checkAlert(fxes);
 
       // MUF
       const muf = data.muf || {};
@@ -387,6 +409,46 @@
       const mm = String(jst.getUTCMinutes()).padStart(2, '0');
       document.getElementById('status-bar').textContent =
         '取得 ' + hh + ':' + mm + ' | 15分ごと更新 | Data: NICT / NOAA SWPC';
+    }
+
+    // ── LINE アラート ─────────────────────────────────────────
+    const WORKER_URL = 'https://iono-line-alert.yotsuzeki.workers.dev';
+    let lineAlertSent = false;
+
+    async function sendLineAlert(message) {
+      try {
+        await fetch(WORKER_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message }),
+        });
+      } catch (e) {
+        console.warn('LINE alert failed:', e.message);
+      }
+    }
+
+    function checkAlert(fxes) {
+      const banner = document.getElementById('alert-banner');
+      if (!fxes) { banner.style.display = 'none'; lineAlertSent = false; return; }
+
+      const names = { ok: '沖縄', yg: '鹿児島', to: '東京', wk: '北海道' };
+      const triggered = ['ok', 'yg', 'to', 'wk'].filter(k => {
+        const v = parseFloat(fxes[k]);
+        return !isNaN(v) && v >= 9.0;
+      });
+
+      if (triggered.length > 0) {
+        banner.style.display = 'block';
+        if (!lineAlertSent) {
+          lineAlertSent = true;
+          const detail = triggered.map(k => `${names[k]}: ${fxes[k]}`).join(' / ');
+          const timeStr = fxes.time ?? '--:--';
+          sendLineAlert(`⚠ CB DX Iono Monitor アラート\nFxEs >= 9.0 検出\n${detail}\n観測時刻: ${timeStr} JST`);
+        }
+      } else {
+        banner.style.display = 'none';
+        lineAlertSent = false;
+      }
     }
 
     // ── ブラウザ直接取得 ──────────────────────────────────────
