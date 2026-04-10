@@ -1,0 +1,650 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CB DX Iono Monitor — 運用マニュアル</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: -apple-system, 'Helvetica Neue', sans-serif;
+  background: #0d1b2e;
+  color: #e8eef8;
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  user-select: none;
+}
+
+/* ── Slide container ── */
+#stage {
+  flex: 1;
+  min-height: 0;
+  position: relative;
+  overflow: hidden;
+}
+
+.slide {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 32px 40px 24px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.35s ease;
+  overflow-y: auto;
+}
+.slide.active {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* ── Slide types ── */
+.slide-cover {
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  background: linear-gradient(135deg, #0d1b2e 0%, #162840 100%);
+}
+.slide-content {
+  background: #111e30;
+}
+.slide-warning {
+  background: linear-gradient(135deg, #2a0a0a 0%, #1e1018 100%);
+}
+
+/* ── Typography ── */
+.slide-num {
+  font-size: 0.6rem;
+  color: #4a6080;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+h1.cover-title {
+  font-size: clamp(1.6rem, 4vw, 2.6rem);
+  font-weight: 900;
+  color: #fff;
+  line-height: 1.15;
+  margin-bottom: 12px;
+}
+.cover-sub {
+  font-size: clamp(0.75rem, 2vw, 1rem);
+  color: #7090b8;
+  margin-bottom: 32px;
+}
+.cover-badge {
+  display: inline-block;
+  background: #1e3a5f;
+  color: #7ab4f8;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 4px 14px;
+  border-radius: 20px;
+  letter-spacing: 0.1em;
+}
+h2.slide-title {
+  font-size: clamp(1.1rem, 2.5vw, 1.6rem);
+  font-weight: 800;
+  color: #fff;
+  margin-bottom: 20px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid #1e3a5f;
+}
+h2.slide-title .title-icon {
+  margin-right: 8px;
+}
+
+/* ── Content blocks ── */
+.section {
+  margin-bottom: 18px;
+}
+.section-label {
+  font-size: 0.6rem;
+  font-weight: 700;
+  color: #5080b0;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  margin-bottom: 6px;
+}
+
+/* ── Cards ── */
+.card-row {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.card {
+  flex: 1;
+  min-width: 160px;
+  background: #162840;
+  border-radius: 10px;
+  padding: 12px 14px;
+  border: 1px solid #1e3a5f;
+}
+.card-icon { font-size: 1.4rem; margin-bottom: 4px; }
+.card-title { font-size: 0.7rem; font-weight: 800; color: #a8c8f0; margin-bottom: 4px; }
+.card-body { font-size: 0.65rem; color: #7090a8; line-height: 1.5; }
+
+/* ── Steps ── */
+.steps { counter-reset: step; }
+.step {
+  counter-increment: step;
+  display: flex;
+  gap: 12px;
+  margin-bottom: 14px;
+  align-items: flex-start;
+}
+.step::before {
+  content: counter(step);
+  flex-shrink: 0;
+  width: 26px; height: 26px;
+  border-radius: 50%;
+  background: #1e4080;
+  color: #7ab4f8;
+  font-size: 0.75rem;
+  font-weight: 800;
+  display: flex; align-items: center; justify-content: center;
+}
+.step-body { font-size: 0.72rem; line-height: 1.6; color: #c8d8f0; }
+.step-body strong { color: #fff; }
+.step-body code {
+  background: #0d1b2e;
+  color: #7ab4f8;
+  font-family: monospace;
+  font-size: 0.7rem;
+  padding: 1px 6px;
+  border-radius: 4px;
+}
+
+/* ── Table ── */
+.tbl {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.68rem;
+}
+.tbl th {
+  background: #1e3a5f;
+  color: #7ab4f8;
+  padding: 7px 10px;
+  text-align: left;
+  font-weight: 700;
+}
+.tbl td {
+  padding: 7px 10px;
+  border-bottom: 1px solid #1a2e44;
+  color: #c8d8f0;
+  line-height: 1.5;
+}
+.tbl tr:last-child td { border-bottom: none; }
+.tbl code {
+  background: #0d1b2e;
+  color: #7ab4f8;
+  font-size: 0.65rem;
+  padding: 1px 5px;
+  border-radius: 3px;
+  font-family: monospace;
+}
+
+/* ── Alert box ── */
+.alert-box {
+  background: #3a1010;
+  border: 1px solid #802020;
+  border-radius: 10px;
+  padding: 12px 16px;
+  margin-bottom: 14px;
+}
+.alert-box .alert-head {
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: #ff8080;
+  margin-bottom: 4px;
+}
+.alert-box .alert-body {
+  font-size: 0.67rem;
+  color: #d0a0a0;
+  line-height: 1.6;
+}
+
+.info-box {
+  background: #0e2840;
+  border: 1px solid #1e4878;
+  border-radius: 10px;
+  padding: 12px 16px;
+  margin-bottom: 14px;
+}
+.info-box .info-head {
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: #7ab4f8;
+  margin-bottom: 4px;
+}
+.info-box .info-body {
+  font-size: 0.67rem;
+  color: #8090a8;
+  line-height: 1.6;
+}
+
+.ok-box {
+  background: #0a2a18;
+  border: 1px solid #1a6040;
+  border-radius: 10px;
+  padding: 12px 16px;
+  margin-bottom: 14px;
+}
+.ok-box .ok-head {
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: #50d87a;
+  margin-bottom: 4px;
+}
+.ok-box .ok-body {
+  font-size: 0.67rem;
+  color: #80b090;
+  line-height: 1.6;
+}
+
+/* ── URL list ── */
+.url-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #162840;
+  border-radius: 8px;
+  padding: 10px 14px;
+  margin-bottom: 8px;
+  border: 1px solid #1e3a5f;
+}
+.url-icon { font-size: 1.2rem; flex-shrink: 0; }
+.url-name { font-size: 0.72rem; font-weight: 700; color: #a8c8f0; flex: 1; }
+.url-desc { font-size: 0.6rem; color: #5070a0; }
+.url-link { font-size: 0.6rem; color: #4a7ab8; font-family: monospace; word-break: break-all; }
+
+/* ── Nav ── */
+#nav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 10px 20px;
+  background: #0a1422;
+  border-top: 1px solid #1a2e44;
+  flex-shrink: 0;
+}
+.nav-btn {
+  background: #1e3a5f;
+  color: #7ab4f8;
+  border: none;
+  padding: 7px 20px;
+  border-radius: 8px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.nav-btn:hover { background: #2a5090; }
+.nav-btn:disabled { opacity: 0.3; cursor: default; }
+#slide-counter {
+  font-size: 0.65rem;
+  color: #4a6080;
+  min-width: 70px;
+  text-align: center;
+}
+#progress {
+  position: absolute;
+  bottom: 0; left: 0;
+  height: 2px;
+  background: #3a7bd5;
+  transition: width 0.35s ease;
+}
+</style>
+</head>
+<body>
+
+<div id="stage">
+<div id="progress"></div>
+
+<!-- ══ Slide 1: Cover ══ -->
+<div class="slide slide-cover active">
+  <div class="slide-num">CB DX IONO MONITOR</div>
+  <h1 class="cover-title">運用マニュアル</h1>
+  <p class="cover-sub">システム概要・日常操作・メンテナンス手順</p>
+  <div class="cover-badge">Ver 1.0 — 2026年4月</div>
+</div>
+
+<!-- ══ Slide 2: システム構成 ══ -->
+<div class="slide slide-content">
+  <div class="slide-num">01 / システム構成</div>
+  <h2 class="slide-title"><span class="title-icon">🏗</span>システム全体像</h2>
+  <div class="card-row">
+    <div class="card">
+      <div class="card-icon">📡</div>
+      <div class="card-title">データソース</div>
+      <div class="card-body">NICT（FxEs・MUF）<br>NOAA SWPC（Xray・Kp・F10.7）<br>15分ごと自動取得</div>
+    </div>
+    <div class="card">
+      <div class="card-icon">🌐</div>
+      <div class="card-title">Webモニター</div>
+      <div class="card-body">GitHub Pages<br>静的HTML/JS<br>スマホ・PC対応</div>
+    </div>
+    <div class="card">
+      <div class="card-icon">⚡</div>
+      <div class="card-title">Cloudflare Worker</div>
+      <div class="card-body">LINE通知プロキシ<br>無料 100k req/日<br>環境変数でトークン管理</div>
+    </div>
+    <div class="card">
+      <div class="card-icon">💬</div>
+      <div class="card-title">LINE通知</div>
+      <div class="card-body">FxEs ≥ 9.0 でアラート<br>Messaging API<br>無料 200通/月</div>
+    </div>
+  </div>
+  <div class="section" style="margin-top:8px;">
+    <div class="section-label">アラート発火条件</div>
+    <div class="info-box" style="margin-bottom:0;">
+      <div class="info-head">FxEs（スポラジックE）いずれかの観測点で 9.0 以上</div>
+      <div class="info-body">沖縄 / 鹿児島 / 東京 / 北海道 のうち1局でも 9.0 以上 → 赤バナー表示 + LINE送信<br>
+      条件が解除されるまで再送しない（重複送信防止）</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ Slide 3: 日常操作 ══ -->
+<div class="slide slide-content">
+  <div class="slide-num">02 / 日常操作</div>
+  <h2 class="slide-title"><span class="title-icon">📱</span>モニターの見方・使い方</h2>
+  <div class="steps">
+    <div class="step">
+      <div class="step-body"><strong>ブックマークからモニターを開く</strong><br>
+      ページを開くと自動でデータ取得が始まる。15分ごとに自動更新。</div>
+    </div>
+    <div class="step">
+      <div class="step-body"><strong>ヘッダーの観測時刻を確認</strong><br>
+      「観測 HH:MM JST」が最新のFxEs観測時刻。古い場合はデータ未更新。</div>
+    </div>
+    <div class="step">
+      <div class="step-body"><strong>手動更新したい場合</strong><br>
+      右上の <code>更新</code> ボタンを押す。</div>
+    </div>
+    <div class="step">
+      <div class="step-body"><strong>アラートが出たら</strong><br>
+      画面上部に赤い点滅バナーが表示される。同時にLINEにもメッセージが届く。</div>
+    </div>
+  </div>
+  <div class="info-box">
+    <div class="info-head">マーカーの色の意味（FxEs）</div>
+    <div class="info-body">
+      灰色 = データなし　／　水色 = 通常　／　黄色 ≥ 7.0　／　ピンク ≥ 8.0　／　<strong style="color:#ff8080;">赤 ≥ 9.0 → アラート</strong>
+    </div>
+  </div>
+</div>
+
+<!-- ══ Slide 4: LINEトークンとは ══ -->
+<div class="slide slide-warning">
+  <div class="slide-num">03 / LINE トークン管理</div>
+  <h2 class="slide-title"><span class="title-icon">🔑</span>Channel Access Token とは</h2>
+  <div class="alert-box">
+    <div class="alert-head">⚠ 最重要メンテナンス作業</div>
+    <div class="alert-body">
+      LINE Messaging API の Channel Access Token には有効期限があります。<br>
+      期限切れになると LINE通知が届かなくなります。定期的な更新が必要です。
+    </div>
+  </div>
+  <div class="card-row">
+    <div class="card">
+      <div class="card-title">トークンの種類</div>
+      <div class="card-body">
+        <strong style="color:#ff8080;">短期トークン</strong><br>有効期限 30日<br>自動で失効する<br><br>
+        <strong style="color:#50d87a;">長期トークン（ステートレス）</strong><br>有効期限なし<br>ただし上限数あり（30個）
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">現在の設定</div>
+      <div class="card-body">
+        発行時に選んだ種類による。<br>LINE Developers コンソールで確認できる。<br><br>
+        <strong style="color:#f8d020;">短期の場合は30日以内に更新が必要</strong>
+      </div>
+    </div>
+  </div>
+  <div class="info-box" style="margin-top:10px;">
+    <div class="info-head">確認方法</div>
+    <div class="info-body">LINE Developers → チャンネル → Messaging API設定 → Channel access token<br>
+    発行済みトークンの一覧と有効期限が表示される</div>
+  </div>
+</div>
+
+<!-- ══ Slide 5: トークン更新手順 ══ -->
+<div class="slide slide-warning">
+  <div class="slide-num">04 / LINE トークン更新手順</div>
+  <h2 class="slide-title"><span class="title-icon">🔄</span>トークン更新の手順</h2>
+  <div class="steps">
+    <div class="step">
+      <div class="step-body">
+        <strong>LINE Developers を開く</strong><br>
+        <code>https://developers.line.biz/console/</code> にアクセス
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-body">
+        <strong>チャンネルを選択</strong><br>
+        「CB DX Alert」チャンネル → 「Messaging API設定」タブ
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-body">
+        <strong>新しいトークンを発行</strong><br>
+        「Channel access token」の「Issue」または「再発行」ボタンを押す<br>
+        新しいトークン文字列をコピーする
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-body">
+        <strong>Cloudflare Workerに設定</strong><br>
+        <code>https://dash.cloudflare.com/</code> → Workers &amp; Pages → <code>iono-line-alert</code><br>
+        → Settings → Variables and Secrets → <code>LINE_TOKEN</code> の編集ボタン → 新しい値を貼り付けて保存
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-body">
+        <strong>動作確認</strong><br>
+        モニターページのDevTools Consoleでテスト送信（次のスライド参照）
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ Slide 6: 動作テスト ══ -->
+<div class="slide slide-content">
+  <div class="slide-num">05 / 動作テスト</div>
+  <h2 class="slide-title"><span class="title-icon">🧪</span>LINE通知テスト方法</h2>
+  <div class="steps">
+    <div class="step">
+      <div class="step-body">
+        <strong>モニターページを開く</strong><br>
+        ブックマークからCB DX Iono Monitorを開く
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-body">
+        <strong>DevToolsを開く</strong><br>
+        PC: <code>F12</code> または <code>Ctrl+Shift+I</code>（Mac: <code>Cmd+Option+I</code>）<br>
+        「コンソール」タブを選択
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-body">
+        <strong>「allow pasting」と入力してEnter</strong><br>
+        初回は貼り付け制限があるため、これを先に実行する
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-body">
+        <strong>テストコードを貼り付けてEnter</strong><br>
+        <code>fetch('https://iono-line-alert.yotsuzeki.workers.dev',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:'テスト通知'})}).then(r=>r.json()).then(console.log)</code>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-body">
+        <strong>結果確認</strong><br>
+        コンソールに <code>{ok: true, status: 200}</code> と表示 → LINE受信を確認
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ Slide 7: トラブルシューティング ══ -->
+<div class="slide slide-content">
+  <div class="slide-num">06 / トラブル対応</div>
+  <h2 class="slide-title"><span class="title-icon">🔧</span>よくある問題と対処</h2>
+  <table class="tbl">
+    <tr>
+      <th>症状</th>
+      <th>原因</th>
+      <th>対処</th>
+    </tr>
+    <tr>
+      <td>LINEが届かない</td>
+      <td>トークン期限切れ</td>
+      <td>LINE Developersで再発行 → Cloudflare <code>LINE_TOKEN</code> 更新</td>
+    </tr>
+    <tr>
+      <td>データが「--」のまま</td>
+      <td>NICTまたはNOAAサーバー不通<br>またはCORSプロキシ障害</td>
+      <td>しばらく待って「更新」ボタンを押す。数時間続く場合はNICTサイトを直接確認</td>
+    </tr>
+    <tr>
+      <td>観測時刻が古い</td>
+      <td>NICTのデータ更新遅延</td>
+      <td>NICTの更新頻度によるため対処不要。数時間単位の遅延は正常</td>
+    </tr>
+    <tr>
+      <td>テストコードで <code>ok: false</code></td>
+      <td>Worker設定ミス</td>
+      <td>Cloudflareで <code>LINE_TOKEN</code> と <code>LINE_USER_ID</code> を再確認。Workerを再デプロイ</td>
+    </tr>
+    <tr>
+      <td>アラートが出ない（9.0以上なのに）</td>
+      <td>ブラウザのキャッシュ</td>
+      <td>「更新」ボタンを押す。または強制リロード（<code>Ctrl+Shift+R</code>）</td>
+    </tr>
+  </table>
+</div>
+
+<!-- ══ Slide 8: ブックマーク一覧 ══ -->
+<div class="slide slide-content">
+  <div class="slide-num">07 / ブックマーク</div>
+  <h2 class="slide-title"><span class="title-icon">🔖</span>必須ブックマーク</h2>
+  <div class="url-row">
+    <div class="url-icon">📺</div>
+    <div>
+      <div class="url-name">CB DX Iono Monitor（本体）</div>
+      <div class="url-link">https://jq3jqo-station.github.io/iono-monitor-web/</div>
+      <div class="url-desc">日常使用 — スマホのホーム画面に追加推奨</div>
+    </div>
+  </div>
+  <div class="url-row">
+    <div class="url-icon">🔑</div>
+    <div>
+      <div class="url-name">LINE Developers Console</div>
+      <div class="url-link">https://developers.line.biz/console/</div>
+      <div class="url-desc">トークン更新・チャンネル管理（最重要）</div>
+    </div>
+  </div>
+  <div class="url-row">
+    <div class="url-icon">⚡</div>
+    <div>
+      <div class="url-name">Cloudflare Dashboard</div>
+      <div class="url-link">https://dash.cloudflare.com/</div>
+      <div class="url-desc">Worker管理・環境変数更新・ログ確認</div>
+    </div>
+  </div>
+  <div class="url-row">
+    <div class="url-icon">💻</div>
+    <div>
+      <div class="url-name">GitHub リポジトリ</div>
+      <div class="url-link">https://github.com/JQ3JQO-Station/iono-monitor-web</div>
+      <div class="url-desc">ソースコード管理</div>
+    </div>
+  </div>
+  <div class="alert-box" style="margin-top:10px; margin-bottom:0;">
+    <div class="alert-head">⚠ トークン更新の目安</div>
+    <div class="alert-body">短期トークンの場合：発行から30日以内に更新。<br>
+    毎月1日など、定期的にLINE Developersを開いて有効期限を確認することを推奨。</div>
+  </div>
+</div>
+
+<!-- ══ Slide 9: メンテカレンダー ══ -->
+<div class="slide slide-content">
+  <div class="slide-num">08 / メンテナンス</div>
+  <h2 class="slide-title"><span class="title-icon">📅</span>定期メンテナンス一覧</h2>
+  <table class="tbl">
+    <tr>
+      <th>頻度</th>
+      <th>作業</th>
+      <th>場所</th>
+    </tr>
+    <tr>
+      <td><strong style="color:#ff8080;">毎月</strong></td>
+      <td>LINE Channel Access Token の有効期限確認。期限が近ければ再発行してCloudflareを更新</td>
+      <td>LINE Developers → Cloudflare</td>
+    </tr>
+    <tr>
+      <td>随時</td>
+      <td>LINEアラートが届かないと気づいたらテスト送信で動作確認</td>
+      <td>モニター DevTools</td>
+    </tr>
+    <tr>
+      <td>随時</td>
+      <td>Cloudflare Worker の無料枠（100k req/日）の使用状況確認</td>
+      <td>Cloudflare → Metrics</td>
+    </tr>
+    <tr>
+      <td>随時</td>
+      <td>LINE Messaging API の無料送信数（200通/月）の確認</td>
+      <td>LINE Developers → 統計</td>
+    </tr>
+  </table>
+  <div class="ok-box" style="margin-top:14px;">
+    <div class="ok-head">通常時は何もしなくてよい</div>
+    <div class="ok-body">
+      モニターは15分ごとに自動更新。GitHub Actionsも自動動作。<br>
+      毎月のトークン確認だけを忘れなければ、あとは放置で OK。
+    </div>
+  </div>
+</div>
+
+</div><!-- /stage -->
+
+<!-- ── Navigation ── -->
+<div id="nav">
+  <button class="nav-btn" id="btn-prev" onclick="go(-1)" disabled>◀ 前へ</button>
+  <div id="slide-counter">1 / 9</div>
+  <button class="nav-btn" id="btn-next" onclick="go(1)">次へ ▶</button>
+</div>
+
+<script>
+const slides = document.querySelectorAll('.slide');
+const total  = slides.length;
+let cur = 0;
+
+function go(d) {
+  slides[cur].classList.remove('active');
+  cur = Math.max(0, Math.min(total - 1, cur + d));
+  slides[cur].classList.add('active');
+  document.getElementById('slide-counter').textContent = (cur + 1) + ' / ' + total;
+  document.getElementById('btn-prev').disabled = cur === 0;
+  document.getElementById('btn-next').disabled = cur === total - 1;
+  document.getElementById('progress').style.width = ((cur + 1) / total * 100) + '%';
+}
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowRight' || e.key === 'ArrowDown') go(1);
+  if (e.key === 'ArrowLeft'  || e.key === 'ArrowUp')   go(-1);
+});
+
+go(0);
+</script>
+</body>
+</html>
