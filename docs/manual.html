@@ -385,33 +385,35 @@ h2.slide-title .title-icon {
 <div class="slide slide-warning">
   <div class="slide-num">03 / LINE トークン管理</div>
   <h2 class="slide-title"><span class="title-icon">🔑</span>Channel Access Token とは</h2>
-  <div class="alert-box">
-    <div class="alert-head">⚠ 最重要メンテナンス作業</div>
-    <div class="alert-body">
-      LINE Messaging API の Channel Access Token には有効期限があります。<br>
-      期限切れになると LINE通知が届かなくなります。定期的な更新が必要です。
+  <div class="ok-box">
+    <div class="ok-head">現在の設定: Long-lived token（無期限）</div>
+    <div class="ok-body">
+      LINE Developers コンソールで「Channel access token (long-lived)」を発行済み。<br>
+      有効期限はなく、<strong style="color:#50d87a;">定期的な更新は不要</strong>です。
     </div>
   </div>
   <div class="card-row">
     <div class="card">
-      <div class="card-title">トークンの種類</div>
+      <div class="card-title">Long-lived token</div>
       <div class="card-body">
-        <strong style="color:#ff8080;">短期トークン</strong><br>有効期限 30日<br>自動で失効する<br><br>
-        <strong style="color:#50d87a;">長期トークン（ステートレス）</strong><br>有効期限なし<br>ただし上限数あり（30個）
+        <strong style="color:#50d87a;">有効期限なし</strong><br>現在使用中<br><br>
+        Reissue（再発行）すると旧トークンは無効になる。再発行した場合はCloudflareの更新が必要。
       </div>
     </div>
     <div class="card">
-      <div class="card-title">現在の設定</div>
+      <div class="card-title">更新が必要なケース</div>
       <div class="card-body">
-        発行時に選んだ種類による。<br>LINE Developers コンソールで確認できる。<br><br>
-        <strong style="color:#f8d020;">短期の場合は30日以内に更新が必要</strong>
+        ・LINEが届かなくなった時<br>
+        ・誤ってReissueした時<br>
+        ・セキュリティ上の理由<br><br>
+        通常は何もしなくてよい
       </div>
     </div>
   </div>
   <div class="info-box" style="margin-top:10px;">
-    <div class="info-head">確認方法</div>
-    <div class="info-body">LINE Developers → チャンネル → Messaging API設定 → Channel access token<br>
-    発行済みトークンの一覧と有効期限が表示される</div>
+    <div class="info-head">Reissue（再発行）した場合の対処</div>
+    <div class="info-body">LINE Developers → チャンネル → Messaging API設定 → Channel access token → Reissue<br>
+    新しいトークンをコピー → Cloudflare → <code>LINE_TOKEN</code> を更新 → 動作テスト</div>
   </div>
 </div>
 
@@ -506,8 +508,8 @@ h2.slide-title .title-icon {
     </tr>
     <tr>
       <td>LINEが届かない</td>
-      <td>トークン期限切れ</td>
-      <td>LINE Developersで再発行 → Cloudflare <code>LINE_TOKEN</code> 更新</td>
+      <td>トークンが再発行された / Worker設定ミス</td>
+      <td>テスト送信で確認 → 失敗なら LINE Developersで再発行 → Cloudflare <code>LINE_TOKEN</code> 更新</td>
     </tr>
     <tr>
       <td>データが「--」のまま</td>
@@ -568,10 +570,10 @@ h2.slide-title .title-icon {
       <div class="url-desc">ソースコード管理</div>
     </div>
   </div>
-  <div class="alert-box" style="margin-top:10px; margin-bottom:0;">
-    <div class="alert-head">⚠ トークン更新の目安</div>
-    <div class="alert-body">短期トークンの場合：発行から30日以内に更新。<br>
-    毎月1日など、定期的にLINE Developersを開いて有効期限を確認することを推奨。</div>
+  <div class="ok-box" style="margin-top:10px; margin-bottom:0;">
+    <div class="ok-head">トークンは無期限 — 定期確認不要</div>
+    <div class="ok-body">Long-lived token を使用中のため、有効期限切れは発生しない。<br>
+    LINEが届かなくなった時だけ確認すればよい。</div>
   </div>
 </div>
 
@@ -586,8 +588,8 @@ h2.slide-title .title-icon {
       <th>場所</th>
     </tr>
     <tr>
-      <td><strong style="color:#ff8080;">毎月</strong></td>
-      <td>LINE Channel Access Token の有効期限確認。期限が近ければ再発行してCloudflareを更新</td>
+      <td>随時</td>
+      <td>LINEが届かなくなった場合のみ: トークンを再発行してCloudflareの <code>LINE_TOKEN</code> を更新</td>
       <td>LINE Developers → Cloudflare</td>
     </tr>
     <tr>
@@ -610,7 +612,7 @@ h2.slide-title .title-icon {
     <div class="ok-head">通常時は何もしなくてよい</div>
     <div class="ok-body">
       モニターは15分ごとに自動更新。GitHub Actionsも自動動作。<br>
-      毎月のトークン確認だけを忘れなければ、あとは放置で OK。
+      LINEトークンは無期限のため、基本的に何もしなくてよい。
     </div>
   </div>
 </div>
