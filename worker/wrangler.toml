@@ -1,0 +1,12 @@
+name = "iono-line-alert"
+main = "index.js"
+compatibility_date = "2024-01-01"
+
+# 15分ごとにCron実行
+[triggers]
+crons = ["*/15 * * * *"]
+
+# KVバインディング（重複送信防止用）
+[[kv_namespaces]]
+binding = "IONO_STATE"
+id = "74476cad97de42928c6c0fca0b7a62a4"

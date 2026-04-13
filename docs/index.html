@@ -88,25 +88,48 @@
       z-index: 10;
     }
     .marker-badge {
-      width: 68px;
-      height: 68px;
-      border-radius: 50%;
+      width: 76px;
+      border-radius: 6px;
       display: flex;
       flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 0px;
       box-shadow: 0 2px 6px rgba(0,0,0,0.22);
+      overflow: hidden;
     }
     .marker-name { display: none; }
+    .marker-history-rows {
+      display: flex;
+      flex-direction: column;
+      padding: 3px 5px 2px;
+      gap: 1px;
+      opacity: 0.78;
+    }
+    .marker-hist-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.52rem;
+      font-weight: 600;
+      line-height: 1.3;
+      gap: 3px;
+    }
+    .hist-time { opacity: 0.75; }
+    .hist-val  { font-weight: 700; }
+    .marker-latest {
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      justify-content: center;
+      gap: 2px;
+      padding: 3px 4px 4px;
+      border-top: 1px solid rgba(255,255,255,0.3);
+    }
     .marker-val {
-      font-size: 1.4rem;
+      font-size: 1.3rem;
       font-weight: 800;
       line-height: 1;
       white-space: nowrap;
     }
     .marker-trend {
-      font-size: 1.4rem;
+      font-size: 1.1rem;
       font-weight: 700;
       line-height: 1;
     }
@@ -213,31 +236,59 @@
         <path class="island" d="M357.94,2h56.11c4.77,0,8.64,3.87,8.64,8.64v83.23c0,4.77-3.87,8.64-8.64,8.64h-75.98c-2.24,0-4.4.87-6.01,2.43l-3.7,3.59c-1.61,1.56-3.76,2.43-6.01,2.43h-15.74c-4.77,0-8.64-3.87-8.64-8.64V10.64c0-4.77,3.87-8.64,8.64-8.64h51.33Z"/>
       </svg>
 
-      <div class="map-marker" id="map-ok" style="left:28.2%;top:27.7%">
+      <div class="map-marker" id="map-ok" style="left:34.5%;top:27.7%">
         <div class="marker-badge col-gray">
-          <span class="marker-val">--</span>
-          <div class="marker-trend">—</div>
+          <div class="marker-history-rows">
+            <div class="marker-hist-row"><span class="hist-time">--:--</span><span class="hist-val">--</span></div>
+            <div class="marker-hist-row"><span class="hist-time">--:--</span><span class="hist-val">--</span></div>
+            <div class="marker-hist-row"><span class="hist-time">--:--</span><span class="hist-val">--</span></div>
+          </div>
+          <div class="marker-latest">
+            <span class="marker-val">--</span>
+            <div class="marker-trend">—</div>
+          </div>
         </div>
       </div>
 
       <div class="map-marker" id="map-yg" style="left:17.4%;top:90.6%">
         <div class="marker-badge col-gray">
-          <span class="marker-val">--</span>
-          <div class="marker-trend">—</div>
+          <div class="marker-history-rows">
+            <div class="marker-hist-row"><span class="hist-time">--:--</span><span class="hist-val">--</span></div>
+            <div class="marker-hist-row"><span class="hist-time">--:--</span><span class="hist-val">--</span></div>
+            <div class="marker-hist-row"><span class="hist-time">--:--</span><span class="hist-val">--</span></div>
+          </div>
+          <div class="marker-latest">
+            <span class="marker-val">--</span>
+            <div class="marker-trend">—</div>
+          </div>
         </div>
       </div>
 
       <div class="map-marker" id="map-to" style="left:77.7%;top:68.2%">
         <div class="marker-badge col-gray">
-          <span class="marker-val">--</span>
-          <div class="marker-trend">—</div>
+          <div class="marker-history-rows">
+            <div class="marker-hist-row"><span class="hist-time">--:--</span><span class="hist-val">--</span></div>
+            <div class="marker-hist-row"><span class="hist-time">--:--</span><span class="hist-val">--</span></div>
+            <div class="marker-hist-row"><span class="hist-time">--:--</span><span class="hist-val">--</span></div>
+          </div>
+          <div class="marker-latest">
+            <span class="marker-val">--</span>
+            <div class="marker-trend">—</div>
+          </div>
         </div>
       </div>
 
       <div class="map-marker" id="map-wk" style="left:78.5%;top:12.2%">
         <div class="marker-badge col-gray">
-          <span class="marker-val">--</span>
-          <div class="marker-trend">—</div>
+          <div class="marker-history-rows">
+            <div class="marker-hist-row"><span class="hist-time">--:--</span><span class="hist-val">--</span></div>
+            <div class="marker-hist-row"><span class="hist-time">--:--</span><span class="hist-val">--</span></div>
+            <div class="marker-hist-row"><span class="hist-time">--:--</span><span class="hist-val">--</span></div>
+          </div>
+          <div class="marker-latest">
+            <span class="marker-val">--</span>
+            <div class="marker-trend">—</div>
+          </div>
         </div>
       </div>
 
@@ -359,13 +410,20 @@
       if (arrow === '↘') return '#0070b0';
       return '#8090a8';
     }
-    function setMarker(id, cls, val, arrow) {
+    function setMarker(id, cls, val, arrow, history) {
       const el = document.getElementById(id);
       recolor(el.querySelector('.marker-badge'), cls);
       el.querySelector('.marker-val').textContent = val;
       const t = el.querySelector('.marker-trend');
       t.textContent = arrow ?? '—';
       t.style.color = cls === 'col-red' ? '#fff' : trendColor(arrow);
+      // 過去3行を更新
+      const rows = el.querySelectorAll('.marker-hist-row');
+      for (let i = 0; i < rows.length; i++) {
+        const h = history && history[i] ? history[i] : null;
+        rows[i].querySelector('.hist-time').textContent = h ? h.time : '--:--';
+        rows[i].querySelector('.hist-val').textContent  = h ? h.val  : '--';
+      }
     }
     function setCell(id, cls, val) {
       const el = document.getElementById(id);
@@ -382,7 +440,14 @@
         const prev = fxes ? fxes[k + '_prev'] : null;
         const val  = (raw && raw !== '--') ? parseFloat(raw).toFixed(1) : '--';
         const arrow = trendArrow(raw, prev);
-        setMarker('map-' + k, fxesClass(raw), val, arrow);
+        // 過去3行（最新を除いた直近3行）
+        const hist = fxes && fxes.history
+          ? fxes.history.slice(0, -1).map(r => ({
+              time: r.time,
+              val: r[k] != null ? parseFloat(r[k]).toFixed(1) : '--'
+            }))
+          : [];
+        setMarker('map-' + k, fxesClass(raw), val, arrow, hist);
       }
       checkAlert(fxes);
 
@@ -512,29 +577,29 @@
       }
       if (rows.length === 0) return null;
 
-      const toMin = t => { const [h, m] = t.split(':').map(Number); return h * 60 + m; };
+      // 日付+時刻で昇順ソート（日付跨ぎ対応）
+      rows.sort((a, b) => {
+        const da = a.date + ' ' + a.time;
+        const db = b.date + ' ' + b.time;
+        return da < db ? -1 : da > db ? 1 : 0;
+      });
 
-      // 最新行を特定（ESP32: latestMin）
-      let latestIdx = 0, latestMin = -1;
-      for (let i = 0; i < rows.length; i++) {
-        const m = toMin(rows[i].time);
-        if (m > latestMin) { latestMin = m; latestIdx = i; }
-      }
-
-      // 直前行を特定（ESP32: oldIdx = 最小のgap > 0）
-      let oldIdx = latestIdx, bestGap = 9999;
-      for (let i = 0; i < rows.length; i++) {
-        if (i === latestIdx) continue;
-        const gap = latestMin - toMin(rows[i].time);
-        if (gap > 0 && gap < bestGap) { bestGap = gap; oldIdx = i; }
-      }
-
-      const latest = rows[latestIdx];
-      const old    = rows[oldIdx];
+      // 直近4行を取得
+      const recent = rows.slice(-4);
+      const latest = recent[recent.length - 1];
+      const prev   = recent.length >= 2 ? recent[recent.length - 2] : null;
 
       // _prev に直前行の値を付加（trend計算用）
       for (const k of ['ok', 'yg', 'to', 'wk'])
-        latest[k + '_prev'] = (oldIdx !== latestIdx) ? old[k] : null;
+        latest[k + '_prev'] = prev ? prev[k] : null;
+
+      // history: recent の各行を文字列化して保持（render で使用）
+      latest.history = recent.map(r => {
+        const h = { time: r.time };
+        for (const k of ['ok', 'yg', 'to', 'wk'])
+          h[k] = r[k]; // null or number（renderで加工）
+        return h;
+      });
 
       // 表示用に null → '--'、数値 → 文字列
       for (const k of ['ok', 'yg', 'to', 'wk'])
