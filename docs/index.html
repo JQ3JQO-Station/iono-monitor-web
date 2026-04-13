@@ -418,11 +418,20 @@
       t.textContent = arrow ?? '—';
       t.style.color = cls === 'col-red' ? '#fff' : trendColor(arrow);
       // 過去3行を更新
-      const rows = el.querySelectorAll('.marker-hist-row');
-      for (let i = 0; i < rows.length; i++) {
+      const histRows = el.querySelectorAll('.marker-hist-row');
+      for (let i = 0; i < histRows.length; i++) {
         const h = history && history[i] ? history[i] : null;
-        rows[i].querySelector('.hist-time').textContent = h ? h.time : '--:--';
-        rows[i].querySelector('.hist-val').textContent  = h ? h.val  : '--';
+        histRows[i].querySelector('.hist-time').textContent = h ? h.time : '--:--';
+        const valEl = histRows[i].querySelector('.hist-val');
+        valEl.textContent = h ? h.val : '--';
+        if (h && h.alert) {
+          // バッジが赤い時は黄色、それ以外は赤で太字
+          valEl.style.color      = cls === 'col-red' ? '#ffdd44' : '#e03030';
+          valEl.style.fontWeight = '800';
+        } else {
+          valEl.style.color      = '';
+          valEl.style.fontWeight = '';
+        }
       }
     }
     function setCell(id, cls, val) {
@@ -444,7 +453,8 @@
         const hist = fxes && fxes.history
           ? fxes.history.slice(0, -1).map(r => ({
               time: r.time,
-              val: r[k] != null ? parseFloat(r[k]).toFixed(1) : '--'
+              val: r[k] != null ? parseFloat(r[k]).toFixed(1) : '--',
+              alert: r[k] != null && parseFloat(r[k]) >= 9.0
             }))
           : [];
         setMarker('map-' + k, fxesClass(raw), val, arrow, hist);
