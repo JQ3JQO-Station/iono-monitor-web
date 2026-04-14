@@ -279,11 +279,18 @@ async function checkAndAlert(env) {
       console.log(`Sent alert to ${r.name}`);
     }
   } else {
-    // Es解除 → 全ユーザーのクールダウンをリセット
-    for (const r of recipients) {
-      await env.IONO_STATE.delete(`alert_sent_${r.lineId}`);
+    // Es解除 → 2回連続で閾値以下を確認してからクールダウンをリセット（瞬間的な変動による誤リセット防止）
+    const clearCount = parseInt(await env.IONO_STATE.get('alert_clearing') || '0') + 1;
+    if (clearCount >= 2) {
+      for (const r of recipients) {
+        await env.IONO_STATE.delete(`alert_sent_${r.lineId}`);
+      }
+      await env.IONO_STATE.delete('alert_clearing');
+      console.log(`FxEs normal (confirmed x2): to=${fxes.to} yg=${fxes.yg} → cooldown cleared`);
+    } else {
+      await env.IONO_STATE.put('alert_clearing', String(clearCount), { expirationTtl: 1800 });
+      console.log(`FxEs normal (count=${clearCount}/2): to=${fxes.to} yg=${fxes.yg} → waiting for confirmation`);
     }
-    console.log(`FxEs normal: to=${fxes.to} yg=${fxes.yg}`);
   }
 }
 
