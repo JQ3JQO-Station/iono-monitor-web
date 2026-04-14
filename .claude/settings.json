@@ -1,0 +1,28 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "REPO=\"/Users/yonzekishigeki/Desktop/電子工作/iono-monitor-web\"; [ \"$(git -C \"$REPO\" rev-parse --show-toplevel 2>/dev/null)\" = \"$REPO\" ] || exit 0; git -C \"$REPO\" pull --rebase 2>&1 | head -5",
+            "timeout": 30,
+            "statusMessage": "最新コードを取得中..."
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "REPO=\"/Users/yonzekishigeki/Desktop/電子工作/iono-monitor-web\"; [ \"$(git -C \"$REPO\" rev-parse --show-toplevel 2>/dev/null)\" = \"$REPO\" ] || exit 0; DEVLOG=\"$REPO/DEVLOG.md\"; DATE=$(date +\"%Y-%m-%d %H:%M\"); LOG=$(git -C \"$REPO\" log --oneline -5); printf \"\\n## %s — Auto-log\\n%s\\n\" \"$DATE\" \"$LOG\" >> \"$DEVLOG\"",
+            "timeout": 15,
+            "async": true
+          }
+        ]
+      }
+    ]
+  }
+}
