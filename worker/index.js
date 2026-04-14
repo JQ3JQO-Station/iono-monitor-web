@@ -253,7 +253,7 @@ async function checkAndAlert(env) {
 
   const names = { to: '東京', yg: '鹿児島' };
   const triggered = ['to', 'yg'].filter(k => {
-    const v = parseFloat(fxes[k]); return !isNaN(v) && v >= 9.0;
+    const v = parseFloat(fxes[k]); return !isNaN(v) && v >= 7.0;
   });
 
   if (triggered.length > 0) {
@@ -265,7 +265,7 @@ async function checkAndAlert(env) {
     const jstDay  = jstDate.getUTCDay(); // 0=日, 6=土
 
     const detail  = triggered.map(k => `${names[k]}: ${fxes[k]}`).join(' / ');
-    const message = `⚠ CB DX Iono Monitor アラート\nFxEs >= 9.0 検出\n${detail}\n観測時刻: ${fxes.time ?? '--:--'} JST`;
+    const message = `⚠ CB DX Iono Monitor アラート\nFxEs >= 7.0 検出\n${detail}\n観測時刻: ${fxes.time ?? '--:--'} JST`;
 
     for (const r of recipients) {
       if (!r.activeDays.includes(jstDay)) continue;
