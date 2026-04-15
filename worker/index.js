@@ -70,7 +70,8 @@ async function handleWebhook(request, env, signature) {
 // ── 友達登録イベント ──────────────────────────────────────────
 async function handleFollow(event, env) {
   const userId = event.source.userId;
-  await replyLine(event.replyToken,
+  // replyLine は返信トークン期限切れで失敗しやすいため pushLine を使用
+  await pushLine(userId,
     'CB DX Iono Monitor の通知登録へようこそ！\nお名前を入力してください：', env);
   await env.IONO_STATE.put(`state_${userId}`, 'AWAITING_NAME', { expirationTtl: 86400 });
 }
@@ -88,18 +89,25 @@ async function handleMessage(event, env) {
 
   const state = (await env.IONO_STATE.get(`state_${userId}`)) || 'NONE';
 
-  // 名前の受付
+  // 名前の受付 → 承認不要・即時登録
   if (state === 'AWAITING_NAME') {
-    const shortId = userId.slice(-6);
-    await env.IONO_STATE.put(`pending_${shortId}`, JSON.stringify({
-      lineId: userId, name: text, requestedAt: new Date().toISOString()
-    }), { expirationTtl: 86400 * 7 });
-
-    await pushLine(env.LINE_USER_ID,
-      `📩 登録申請\n名前: ${text}\n\n承認: 承認 ${shortId}\n拒否: 拒否 ${shortId}`, env);
-    await replyLine(event.replyToken,
-      '申請を受け付けました。管理者が承認するまでお待ちください。', env);
-    await env.IONO_STATE.delete(`state_${userId}`);
+    const recipients = await getRecipients(env);
+    if (!recipients.find(r => r.lineId === userId)) {
+      recipients.push({
+        lineId: userId, name: text,
+        activeDays: [0,1,2,3,4,5,6],
+        activeHours: { start: 0, end: 24 },
+        registeredAt: new Date().toISOString()
+      });
+      await env.IONO_STATE.put('recipients', JSON.stringify(recipients));
+    }
+    await env.IONO_STATE.put(`state_${userId}`, 'AWAITING_DAYS', { expirationTtl: 86400 });
+    await pushLine(userId,
+      `✅ ${text} さん、登録しました！\n\n通知を受け取る曜日を教えてください。\n「毎日」「平日」「土日」のいずれかで入力してください。`, env);
+    // 管理者に通知
+    if (userId !== env.LINE_USER_ID) {
+      await pushLine(env.LINE_USER_ID, `📩 新規登録\n名前: ${text}`, env);
+    }
     return;
   }
 
@@ -176,59 +184,17 @@ async function handleMessage(event, env) {
 
 // ── 管理者コマンド ────────────────────────────────────────────
 async function handleAdminCommand(text, event, env) {
-  const approveMatch = text.match(/^承認\s+(\S+)/);
-  const rejectMatch  = text.match(/^拒否\s+(\S+)/);
-  const listMatch    = text === '一覧';
-
-  if (approveMatch) {
-    const shortId  = approveMatch[1];
-    const pending  = await env.IONO_STATE.get(`pending_${shortId}`);
-    if (!pending) {
-      await replyLine(event.replyToken, '該当する申請が見つかりません。', env); return;
-    }
-    const p = JSON.parse(pending);
-    const recipients = await getRecipients(env);
-    if (!recipients.find(r => r.lineId === p.lineId)) {
-      recipients.push({
-        lineId: p.lineId, name: p.name,
-        activeDays: [0,1,2,3,4,5,6],
-        activeHours: { start: 0, end: 24 },
-        registeredAt: new Date().toISOString()
-      });
-      await env.IONO_STATE.put('recipients', JSON.stringify(recipients));
-    }
-    await env.IONO_STATE.delete(`pending_${shortId}`);
-    await env.IONO_STATE.put(`state_${p.lineId}`, 'AWAITING_DAYS', { expirationTtl: 86400 });
-    await pushLine(p.lineId,
-      '✅ 登録が承認されました！\n\n通知を受け取る曜日を教えてください。\n「毎日」「平日」「土日」のいずれかで入力してください。', env);
-    await replyLine(event.replyToken, `${p.name} を承認しました。`, env);
-    return;
-  }
-
-  if (rejectMatch) {
-    const shortId = rejectMatch[1];
-    const pending = await env.IONO_STATE.get(`pending_${shortId}`);
-    if (!pending) {
-      await replyLine(event.replyToken, '該当する申請が見つかりません。', env); return;
-    }
-    const p = JSON.parse(pending);
-    await env.IONO_STATE.delete(`pending_${shortId}`);
-    await pushLine(p.lineId, '申請が承認されませんでした。', env);
-    await replyLine(event.replyToken, `${p.name} の申請を拒否しました。`, env);
-    return;
-  }
-
-  if (listMatch) {
+  if (text === '一覧') {
     const recipients = await getRecipients(env);
     if (recipients.length === 0) {
-      await replyLine(event.replyToken, '登録者はいません。', env); return;
+      await pushLine(env.LINE_USER_ID, '登録者はいません。', env); return;
     }
     const dayLabel = { '0,1,2,3,4,5,6': '毎日', '1,2,3,4,5': '平日', '0,6': '土日' };
     const list = recipients.map((r, i) => {
       const dayStr = dayLabel[(r.activeDays || []).join(',')] || '-';
       return `${i+1}. ${r.name} / ${dayStr} / ${r.activeHours.start}-${r.activeHours.end}時`;
     }).join('\n');
-    await replyLine(event.replyToken, `📋 登録者一覧（${recipients.length}名）\n${list}`, env);
+    await pushLine(env.LINE_USER_ID, `📋 登録者一覧（${recipients.length}名）\n${list}`, env);
     return;
   }
 }
