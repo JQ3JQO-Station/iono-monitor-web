@@ -164,6 +164,14 @@ async function handleMessage(event, env) {
     }
     return;
   }
+
+  // 未登録ユーザーが何か送ってきた場合 → 登録フローを再起動
+  const recipients = await getRecipients(env);
+  if (!recipients.find(r => r.lineId === userId)) {
+    await env.IONO_STATE.put(`state_${userId}`, 'AWAITING_NAME', { expirationTtl: 86400 });
+    await replyLine(event.replyToken,
+      'CB DX Iono Monitor の通知登録へようこそ！\nお名前を入力してください：', env);
+  }
 }
 
 // ── 管理者コマンド ────────────────────────────────────────────
