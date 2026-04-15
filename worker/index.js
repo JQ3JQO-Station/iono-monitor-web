@@ -81,10 +81,10 @@ async function handleMessage(event, env) {
   const userId = event.source.userId;
   const text   = event.message.text.trim();
 
-  // 管理者コマンド
+  // 管理者コマンド（一覧など管理専用コマンドのみ先に処理。設定変更・状態は通常フローへ）
   if (userId === env.LINE_USER_ID) {
-    await handleAdminCommand(text, event, env);
-    return;
+    const handled = await handleAdminCommand(text, event, env);
+    if (handled) return;
   }
 
   const state = (await env.IONO_STATE.get(`state_${userId}`)) || 'NONE';
@@ -183,11 +183,12 @@ async function handleMessage(event, env) {
 }
 
 // ── 管理者コマンド ────────────────────────────────────────────
+// 管理専用コマンドを処理した場合 true を返す。それ以外は false を返し通常フローへ
 async function handleAdminCommand(text, event, env) {
   if (text === '一覧') {
     const recipients = await getRecipients(env);
     if (recipients.length === 0) {
-      await pushLine(env.LINE_USER_ID, '登録者はいません。', env); return;
+      await pushLine(env.LINE_USER_ID, '登録者はいません。', env); return true;
     }
     const dayLabel = { '0,1,2,3,4,5,6': '毎日', '1,2,3,4,5': '平日', '0,6': '土日' };
     const list = recipients.map((r, i) => {
@@ -195,8 +196,10 @@ async function handleAdminCommand(text, event, env) {
       return `${i+1}. ${r.name} / ${dayStr} / ${r.activeHours.start}-${r.activeHours.end}時`;
     }).join('\n');
     await pushLine(env.LINE_USER_ID, `📋 登録者一覧（${recipients.length}名）\n${list}`, env);
-    return;
+    return true;
   }
+  // 一覧以外（設定変更・状態など）は通常フローに任せる
+  return false;
 }
 
 // ── FxEsチェック＆アラート送信 ────────────────────────────────
