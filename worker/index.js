@@ -241,26 +241,35 @@ async function checkAndAlert(env) {
     const jstHour = jstDate.getUTCHours();
     const jstDay  = jstDate.getUTCDay(); // 0=日, 6=土
 
-    const detail  = triggered.map(k => `${names[k]}: ${fxes[k]}`).join(' / ');
-    const message = `⚠ CB DX Iono Monitor アラート\nFxEs >= 7.0 検出\n${detail}\n観測時刻: ${fxes.time ?? '--:--'} JST`;
-
     for (const r of recipients) {
       if (!r.activeDays.includes(jstDay)) continue;
       if (jstHour < r.activeHours.start || jstHour >= r.activeHours.end) continue;
 
-      const cooldownKey = `alert_sent_${r.lineId}`;
-      if (await env.IONO_STATE.get(cooldownKey)) continue;
+      // 局ごとにクールダウンを確認し、未送信の局のみ抽出
+      const newlyTriggered = [];
+      for (const k of triggered) {
+        if (!await env.IONO_STATE.get(`alert_sent_${r.lineId}_${k}`)) {
+          newlyTriggered.push(k);
+        }
+      }
+      if (newlyTriggered.length === 0) continue;
+
+      const detail  = newlyTriggered.map(k => `${names[k]}: ${fxes[k]}`).join(' / ');
+      const message = `⚠ CB DX Iono Monitor アラート\nFxEs >= 7.0 検出\n${detail}\n観測時刻: ${fxes.time ?? '--:--'} JST`;
 
       await pushLine(r.lineId, message, env);
-      await env.IONO_STATE.put(cooldownKey, '1', { expirationTtl: 7200 });
-      console.log(`Sent alert to ${r.name}`);
+      for (const k of newlyTriggered) {
+        await env.IONO_STATE.put(`alert_sent_${r.lineId}_${k}`, '1', { expirationTtl: 7200 });
+      }
+      console.log(`Sent alert to ${r.name}: ${newlyTriggered.join(', ')}`);
     }
   } else {
     // Es解除 → 2回連続で閾値以下を確認してからクールダウンをリセット（瞬間的な変動による誤リセット防止）
     const clearCount = parseInt(await env.IONO_STATE.get('alert_clearing') || '0') + 1;
     if (clearCount >= 2) {
       for (const r of recipients) {
-        await env.IONO_STATE.delete(`alert_sent_${r.lineId}`);
+        await env.IONO_STATE.delete(`alert_sent_${r.lineId}_to`);
+        await env.IONO_STATE.delete(`alert_sent_${r.lineId}_yg`);
       }
       await env.IONO_STATE.delete('alert_clearing');
       console.log(`FxEs normal (confirmed x2): to=${fxes.to} yg=${fxes.yg} → cooldown cleared`);
