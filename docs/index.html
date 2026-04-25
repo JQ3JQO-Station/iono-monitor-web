@@ -48,6 +48,7 @@
     .card-fxes {
       flex-shrink: 1;
       min-height: 0;
+      position: relative;
     }
     .card-title {
       font-size: 0.58rem;
@@ -196,8 +197,8 @@
     /* ── LINE申込ボタン ── */
     #line-notify-btn {
       position: absolute;
-      bottom: 3px;
-      right: 3px;
+      bottom: 8px;
+      right: 8px;
       background: #06c755;
       color: #fff;
       border: none;
@@ -393,13 +394,14 @@
         </div>
       </div>
 
-      <!-- LINE申込ボタン -->
-      <button id="line-notify-btn" onclick="openLineModal()">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.03 2 11c0 3.08 1.72 5.79 4.34 7.54L5.5 22l4.28-2.09A10.7 10.7 0 0 0 12 20c5.52 0 10-4.03 10-9S17.52 2 12 2Z"/></svg>
-        LINE通知
-      </button>
-
     </div>
+
+    <!-- LINE申込ボタン -->
+    <button id="line-notify-btn" onclick="openLineModal()">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.03 2 11c0 3.08 1.72 5.79 4.34 7.54L5.5 22l4.28-2.09A10.7 10.7 0 0 0 12 20c5.52 0 10-4.03 10-9S17.52 2 12 2Z"/></svg>
+      LINE通知
+    </button>
+
   </div>
 
   <!-- ── LINEモーダル ── -->
