@@ -216,8 +216,10 @@ async function checkAndAlert(env) {
   const fxes = parseFxEs(html);
   if (!fxes) { console.log('FxEs parse failed'); return; }
 
-  // 管理者を受信者リストに自動追加（初回のみ）
+  // recipients を1回だけ読み込む（クールダウン情報も含む）← KV読み取りを集約
   const recipients = await getRecipients(env);
+  let recipientsChanged = false;
+
   if (!recipients.find(r => r.lineId === env.LINE_USER_ID)) {
     recipients.push({
       lineId: env.LINE_USER_ID, name: '管理者',
@@ -225,7 +227,7 @@ async function checkAndAlert(env) {
       activeHours: { start: 0, end: 24 },
       registeredAt: new Date().toISOString()
     });
-    await env.IONO_STATE.put('recipients', JSON.stringify(recipients));
+    recipientsChanged = true;
   }
 
   const names = { ok: '沖縄', yg: '鹿児島', to: '東京', wk: '北海道' };
@@ -234,25 +236,23 @@ async function checkAndAlert(env) {
     const v = parseFloat(fxes[k]); return !isNaN(v) && v >= 7.0;
   });
 
-  if (triggered.length > 0) {
-    // いずれかの地点でEs発生
-    const now    = new Date();
-    const jstMs  = now.getTime() + 9 * 3600000;
-    const jstDate = new Date(jstMs);
-    const jstHour = jstDate.getUTCHours();
-    const jstDay  = jstDate.getUTCDay(); // 0=日, 6=土
+  const now = Date.now();
+  const COOLDOWN_MS = 2 * 60 * 60 * 1000; // 2時間
+  const jstDate = new Date(now + 9 * 3600000);
+  const jstHour = jstDate.getUTCHours();
+  const jstDay  = jstDate.getUTCDay(); // 0=日, 6=土
 
+  if (triggered.length > 0) {
     for (const r of recipients) {
       if (!r.activeDays.includes(jstDay)) continue;
       if (jstHour < r.activeHours.start || jstHour >= r.activeHours.end) continue;
 
-      // 地点ごとにクールダウンを確認し、未送信の地点のみ抽出
-      const newlyTriggered = [];
-      for (const k of triggered) {
-        if (!await env.IONO_STATE.get(`alert_sent_${r.lineId}_${k}`)) {
-          newlyTriggered.push(k);
-        }
-      }
+      if (!r.cooldowns) r.cooldowns = {};
+
+      // クールダウンをメモリ内で確認（KV読み取り不要）
+      const newlyTriggered = triggered.filter(k =>
+        !r.cooldowns[k] || (now - r.cooldowns[k]) >= COOLDOWN_MS
+      );
       if (newlyTriggered.length === 0) continue;
 
       const detail  = newlyTriggered.map(k => `${names[k]}: ${fxes[k]}`).join(' / ');
@@ -260,25 +260,28 @@ async function checkAndAlert(env) {
 
       await pushLine(r.lineId, message, env);
       for (const k of newlyTriggered) {
-        await env.IONO_STATE.put(`alert_sent_${r.lineId}_${k}`, '1', { expirationTtl: 7200 });
+        r.cooldowns[k] = now; // タイムスタンプをreсipientsに保存
       }
+      recipientsChanged = true;
       console.log(`Sent alert to ${r.name}: ${newlyTriggered.join(', ')}`);
     }
   } else {
     // 全地点解除 → 2回連続で閾値以下を確認してからクールダウンをリセット
     const clearCount = parseInt(await env.IONO_STATE.get('alert_clearing') || '0') + 1;
     if (clearCount >= 2) {
-      for (const r of recipients) {
-        for (const k of allStations) {
-          await env.IONO_STATE.delete(`alert_sent_${r.lineId}_${k}`);
-        }
-      }
+      for (const r of recipients) { r.cooldowns = {}; }
       await env.IONO_STATE.delete('alert_clearing');
-      console.log(`FxEs all clear (confirmed x2): ok=${fxes.ok} yg=${fxes.yg} to=${fxes.to} wk=${fxes.wk} → cooldown cleared`);
+      recipientsChanged = true;
+      console.log(`FxEs all clear (confirmed x2) → cooldown cleared`);
     } else {
       await env.IONO_STATE.put('alert_clearing', String(clearCount), { expirationTtl: 1800 });
-      console.log(`FxEs all clear (count=${clearCount}/2): ok=${fxes.ok} yg=${fxes.yg} to=${fxes.to} wk=${fxes.wk}`);
+      console.log(`FxEs all clear (count=${clearCount}/2)`);
     }
+  }
+
+  // 変更があった場合のみ1回だけ保存 ← writeを最小化
+  if (recipientsChanged) {
+    await env.IONO_STATE.put('recipients', JSON.stringify(recipients));
   }
 }
 
