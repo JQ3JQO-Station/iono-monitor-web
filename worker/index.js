@@ -228,54 +228,47 @@ async function checkAndAlert(env) {
     await env.IONO_STATE.put('recipients', JSON.stringify(recipients));
   }
 
-  const names = { to: '東京', yg: '鹿児島' };
-  const triggered = ['to', 'yg'].filter(k => {
+  const names = { ok: '沖縄', yg: '鹿児島', to: '東京', wk: '北海道' };
+  const allStations = ['ok', 'yg', 'to', 'wk'];
+  const triggered = allStations.filter(k => {
     const v = parseFloat(fxes[k]); return !isNaN(v) && v >= 7.0;
   });
+  const allActive = triggered.length === allStations.length;
 
-  if (triggered.length > 0) {
-    // JST時刻・曜日
+  if (allActive) {
+    // 全地点でEs発生
     const now    = new Date();
     const jstMs  = now.getTime() + 9 * 3600000;
     const jstDate = new Date(jstMs);
     const jstHour = jstDate.getUTCHours();
     const jstDay  = jstDate.getUTCDay(); // 0=日, 6=土
 
+    const detail  = allStations.map(k => `${names[k]}: ${fxes[k]}`).join(' / ');
+    const message = `⚠ CB DX Iono Monitor アラート\n全地点 FxEs >= 7.0 検出\n${detail}\n観測時刻: ${fxes.time ?? '--:--'} JST`;
+
     for (const r of recipients) {
       if (!r.activeDays.includes(jstDay)) continue;
       if (jstHour < r.activeHours.start || jstHour >= r.activeHours.end) continue;
 
-      // 局ごとにクールダウンを確認し、未送信の局のみ抽出
-      const newlyTriggered = [];
-      for (const k of triggered) {
-        if (!await env.IONO_STATE.get(`alert_sent_${r.lineId}_${k}`)) {
-          newlyTriggered.push(k);
-        }
-      }
-      if (newlyTriggered.length === 0) continue;
-
-      const detail  = newlyTriggered.map(k => `${names[k]}: ${fxes[k]}`).join(' / ');
-      const message = `⚠ CB DX Iono Monitor アラート\nFxEs >= 7.0 検出\n${detail}\n観測時刻: ${fxes.time ?? '--:--'} JST`;
+      const cooldownKey = `alert_sent_${r.lineId}`;
+      if (await env.IONO_STATE.get(cooldownKey)) continue;
 
       await pushLine(r.lineId, message, env);
-      for (const k of newlyTriggered) {
-        await env.IONO_STATE.put(`alert_sent_${r.lineId}_${k}`, '1', { expirationTtl: 7200 });
-      }
-      console.log(`Sent alert to ${r.name}: ${newlyTriggered.join(', ')}`);
+      await env.IONO_STATE.put(cooldownKey, '1', { expirationTtl: 7200 });
+      console.log(`Sent alert to ${r.name}`);
     }
   } else {
-    // Es解除 → 2回連続で閾値以下を確認してからクールダウンをリセット（瞬間的な変動による誤リセット防止）
+    // 全地点揃っていない → クールダウンリセット待機（瞬間的な変動による誤リセット防止）
     const clearCount = parseInt(await env.IONO_STATE.get('alert_clearing') || '0') + 1;
     if (clearCount >= 2) {
       for (const r of recipients) {
-        await env.IONO_STATE.delete(`alert_sent_${r.lineId}_to`);
-        await env.IONO_STATE.delete(`alert_sent_${r.lineId}_yg`);
+        await env.IONO_STATE.delete(`alert_sent_${r.lineId}`);
       }
       await env.IONO_STATE.delete('alert_clearing');
-      console.log(`FxEs normal (confirmed x2): to=${fxes.to} yg=${fxes.yg} → cooldown cleared`);
+      console.log(`FxEs not all active (confirmed x2): ok=${fxes.ok} yg=${fxes.yg} to=${fxes.to} wk=${fxes.wk} → cooldown cleared`);
     } else {
       await env.IONO_STATE.put('alert_clearing', String(clearCount), { expirationTtl: 1800 });
-      console.log(`FxEs normal (count=${clearCount}/2): to=${fxes.to} yg=${fxes.yg} → waiting for confirmation`);
+      console.log(`FxEs not all active (count=${clearCount}/2): ok=${fxes.ok} yg=${fxes.yg} to=${fxes.to} wk=${fxes.wk}`);
     }
   }
 }

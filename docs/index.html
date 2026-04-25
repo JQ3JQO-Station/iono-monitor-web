@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
   <title>CB DX Iono Monitor</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -192,6 +193,87 @@
       text-align: center;
       flex-shrink: 0;
     }
+
+    /* ── LINE申込ボタン ── */
+    #line-notify-btn {
+      position: absolute;
+      bottom: 8px;
+      right: 8px;
+      background: #06c755;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 5px 9px;
+      font-size: 0.65rem;
+      font-weight: 700;
+      cursor: pointer;
+      z-index: 20;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.25);
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    #line-notify-btn:active { filter: brightness(0.88); }
+
+    /* ── LINEモーダル ── */
+    #line-modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.55);
+      z-index: 200;
+      align-items: center;
+      justify-content: center;
+    }
+    #line-modal-overlay.open { display: flex; }
+    #line-modal {
+      background: #fff;
+      border-radius: 16px;
+      padding: 22px 20px 18px;
+      max-width: 310px;
+      width: 90%;
+      text-align: center;
+      position: relative;
+    }
+    #line-modal-close {
+      position: absolute;
+      top: 10px; right: 14px;
+      font-size: 1.2rem;
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: #8090a8;
+      line-height: 1;
+    }
+    #line-modal h2 {
+      font-size: 1rem;
+      font-weight: 800;
+      color: #06c755;
+      margin-bottom: 12px;
+    }
+    #line-modal .modal-desc {
+      font-size: 0.78rem;
+      color: #3a4a5a;
+      line-height: 1.75;
+      text-align: left;
+      margin-bottom: 14px;
+    }
+    #line-modal .modal-desc li { margin-left: 1.2em; margin-bottom: 2px; }
+    #qrcode-container {
+      display: flex;
+      justify-content: center;
+      margin: 8px 0 10px;
+    }
+    #qrcode-container canvas,
+    #qrcode-container img {
+      border-radius: 8px;
+      border: 3px solid #06c755;
+    }
+    #line-modal .modal-hint {
+      font-size: 0.68rem;
+      color: #8090a8;
+      line-height: 1.6;
+    }
   </style>
 </head>
 <body>
@@ -292,6 +374,29 @@
         </div>
       </div>
 
+      <!-- LINE申込ボタン -->
+      <button id="line-notify-btn" onclick="openLineModal()">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.03 2 11c0 3.08 1.72 5.79 4.34 7.54L5.5 22l4.28-2.09A10.7 10.7 0 0 0 12 20c5.52 0 10-4.03 10-9S17.52 2 12 2Z"/></svg>
+        LINE通知
+      </button>
+
+    </div>
+  </div>
+
+  <!-- ── LINEモーダル ── -->
+  <div id="line-modal-overlay" onclick="handleOverlayClick(event)">
+    <div id="line-modal">
+      <button id="line-modal-close" onclick="closeLineModal()">✕</button>
+      <h2>📲 LINE通知を受け取る</h2>
+      <div class="modal-desc">
+        <ul>
+          <li>沖縄・鹿児島・東京・北海道の<strong>全地点</strong>でFxEsが<strong>7.0 MHz超</strong>を検出すると通知が届きます</li>
+          <li>データは約5分ごとに更新されるため、タイムラグが生じます</li>
+          <li>登録後、受信する曜日・時間帯を設定できます</li>
+        </ul>
+      </div>
+      <div id="qrcode-container"><div id="qrcode"></div></div>
+      <div class="modal-hint">QRコードをスキャンするか<br>LINEで「@704rqoiy」を検索してください</div>
     </div>
   </div>
 
@@ -642,6 +747,28 @@
 
     fetchAllData();
     setInterval(fetchAllData, 15 * 60 * 1000);
+
+    // ── LINE申込モーダル ────────────────────────────────────────
+    let _qrGenerated = false;
+    function openLineModal() {
+      document.getElementById('line-modal-overlay').classList.add('open');
+      if (!_qrGenerated) {
+        new QRCode(document.getElementById('qrcode'), {
+          text: 'https://line.me/R/ti/p/@704rqoiy',
+          width: 160,
+          height: 160,
+          colorDark: '#06c755',
+          colorLight: '#ffffff',
+        });
+        _qrGenerated = true;
+      }
+    }
+    function closeLineModal() {
+      document.getElementById('line-modal-overlay').classList.remove('open');
+    }
+    function handleOverlayClick(e) {
+      if (e.target === document.getElementById('line-modal-overlay')) closeLineModal();
+    }
   </script>
 </body>
 </html>
