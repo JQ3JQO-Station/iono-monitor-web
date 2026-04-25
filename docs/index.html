@@ -4,7 +4,6 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
   <title>CB DX Iono Monitor</title>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -777,7 +776,11 @@
     let _qrGenerated = false;
     function openLineModal() {
       document.getElementById('line-modal-overlay').classList.add('open');
-      if (!_qrGenerated) {
+      if (_qrGenerated) return;
+      // QRCode.jsをモーダル表示時に遅延読み込み（ページ初期ロードをブロックしない）
+      const s = document.createElement('script');
+      s.src = 'https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js';
+      s.onload = () => {
         new QRCode(document.getElementById('qrcode'), {
           text: 'https://line.me/R/ti/p/@704rqoiy',
           width: 160,
@@ -786,7 +789,8 @@
           colorLight: '#ffffff',
         });
         _qrGenerated = true;
-      }
+      };
+      document.head.appendChild(s);
     }
     function closeLineModal() {
       document.getElementById('line-modal-overlay').classList.remove('open');
