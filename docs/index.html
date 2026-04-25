@@ -269,6 +269,26 @@
       border-radius: 8px;
       border: 3px solid #06c755;
     }
+    #line-add-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: #06c755;
+      color: #fff;
+      text-decoration: none;
+      font-size: 0.9rem;
+      font-weight: 800;
+      padding: 10px 20px;
+      border-radius: 10px;
+      margin-bottom: 14px;
+      box-shadow: 0 2px 8px rgba(6,199,85,0.35);
+    }
+    #line-add-btn:active { filter: brightness(0.88); }
+    .modal-divider {
+      font-size: 0.68rem;
+      color: #b0b8c8;
+      margin-bottom: 10px;
+    }
     #line-modal .modal-hint {
       font-size: 0.68rem;
       color: #8090a8;
@@ -395,8 +415,13 @@
           <li>登録後、受信する曜日・時間帯を設定できます</li>
         </ul>
       </div>
+      <a href="https://line.me/R/ti/p/@704rqoiy" target="_blank" id="line-add-btn">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.03 2 11c0 3.08 1.72 5.79 4.34 7.54L5.5 22l4.28-2.09A10.7 10.7 0 0 0 12 20c5.52 0 10-4.03 10-9S17.52 2 12 2Z"/></svg>
+        LINEで友だち追加
+      </a>
+      <div class="modal-divider">または（別端末からQRコードをスキャン）</div>
       <div id="qrcode-container"><div id="qrcode"></div></div>
-      <div class="modal-hint">QRコードをスキャンするか<br>LINEで「@704rqoiy」を検索してください</div>
+      <div class="modal-hint">LINEで「@704rqoiy」を検索することもできます</div>
     </div>
   </div>
 
