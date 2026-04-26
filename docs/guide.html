@@ -530,6 +530,183 @@
     </p>
   </div>
 
+  <!-- MUFのしくみ -->
+  <div class="card">
+    <div class="card-title">MUF（最高使用周波数）のしくみ</div>
+    <h2>FxEsが低くてもCBが届く理由</h2>
+    <p>
+      FxEsは「真上に向けて計測した」臨界周波数です。しかし電波は斜めに入射するため、
+      実際に使える最高周波数（<strong>パスMUF</strong>）はFxEsよりずっと高くなります。
+    </p>
+
+    <!-- イラスト：垂直vs斜入射 -->
+    <div class="illust-wrap" style="margin:14px 0 8px">
+      <svg width="420" height="160" viewBox="0 0 420 160" xmlns="http://www.w3.org/2000/svg" aria-label="垂直入射と斜入射のMUF比較">
+        <defs>
+          <linearGradient id="skyG2" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#c8deff"/>
+            <stop offset="100%" stop-color="#edf1f7"/>
+          </linearGradient>
+        </defs>
+        <rect width="420" height="160" fill="url(#skyG2)" rx="8"/>
+        <!-- 地面 -->
+        <rect x="0" y="135" width="420" height="25" fill="#c8d8b0"/>
+        <!-- Es層 -->
+        <rect x="20" y="42" width="380" height="16" rx="6" fill="#f0a500" opacity="0.7"/>
+        <text x="210" y="53" text-anchor="middle" font-size="10" font-weight="700" fill="#7a4800" font-family="sans-serif">Es層（高度 100km）</text>
+
+        <!-- 垂直入射 -->
+        <line x1="90" y1="58" x2="90" y2="132" stroke="#3a7bd5" stroke-width="2" stroke-dasharray="5,3"/>
+        <polygon points="90,58 86,70 94,70" fill="#3a7bd5"/>
+        <text x="90" y="148" text-anchor="middle" font-size="9" font-weight="700" fill="#3a7bd5" font-family="sans-serif">FxEs測定局</text>
+        <text x="90" y="158" text-anchor="middle" font-size="8" fill="#3a7bd5" font-family="sans-serif">（垂直入射）</text>
+        <text x="90" y="30" text-anchor="middle" font-size="8" fill="#3a7bd5" font-family="sans-serif">FxEs = 5MHz</text>
+
+        <!-- 斜入射の電波 -->
+        <line x1="155" y1="132" x2="240" y2="50" stroke="#e05050" stroke-width="2"/>
+        <line x1="240" y1="50" x2="325" y2="132" stroke="#e05050" stroke-width="2"/>
+        <polygon points="240,50 230,62 238,57" fill="#e05050"/>
+        <text x="155" y="148" text-anchor="middle" font-size="9" font-weight="700" fill="#1a3050" font-family="sans-serif">送信局</text>
+        <text x="325" y="148" text-anchor="middle" font-size="9" font-weight="700" fill="#e05050" font-family="sans-serif">受信局</text>
+        <!-- MUF表示 -->
+        <rect x="260" y="22" width="130" height="28" rx="5" fill="rgba(255,255,255,0.85)"/>
+        <text x="325" y="34" text-anchor="middle" font-size="9" font-weight="700" fill="#e05050" font-family="sans-serif">パスMUF ≈ 37MHz</text>
+        <text x="325" y="46" text-anchor="middle" font-size="8" fill="#8090a8" font-family="sans-serif">（斜入射・距離1,500km）</text>
+        <!-- 矢印 -->
+        <line x1="248" y1="35" x2="263" y2="35" stroke="#e05050" stroke-width="1" marker-end="url(#arr)"/>
+
+        <!-- ワンスパン距離 -->
+        <line x1="155" y1="155" x2="325" y2="155" stroke="#1a3050" stroke-width="1"/>
+        <polygon points="155,152 148,155 155,158" fill="#1a3050"/>
+        <polygon points="325,152 332,155 325,158" fill="#1a3050"/>
+        <text x="240" y="153" text-anchor="middle" font-size="9" fill="#1a3050" font-weight="700" font-family="sans-serif">ワンスパン 1,500km</text>
+      </svg>
+    </div>
+
+    <p>
+      FxEsが5MHzでも、1,500km離れた斜入射では<strong>パスMUF ≈ 37MHz</strong>になります。
+      つまりCB（27MHz）の交信に<strong>FxEsは5MHz程度あれば十分</strong>なケースがあります。
+    </p>
+
+    <div class="formula-box" style="margin-top:10px">
+      <div style="margin-bottom:6px"><strong>パスMUF の計算式（平面近似）</strong></div>
+      <div class="formula">パスMUF = FxEs × √( 1 + (D ÷ 2h)² )</div>
+      <div style="margin-top:8px; font-size:0.8rem; color:#5a6a80">D＝距離(km)、h＝反射高度(km、通常100km)</div>
+    </div>
+
+    <div style="overflow-x:auto; margin-top:12px">
+      <table style="width:100%; border-collapse:collapse; font-size:0.8rem">
+        <thead>
+          <tr style="background:#f3f6fb">
+            <th style="padding:7px 8px; text-align:left; color:#5a6a80; font-weight:700; border-bottom:2px solid #edf1f7">ワンスパン距離</th>
+            <th style="padding:7px 8px; text-align:center; color:#5a6a80; font-weight:700; border-bottom:2px solid #edf1f7">CB(27MHz)に必要なFxEs</th>
+            <th style="padding:7px 8px; text-align:center; color:#5a6a80; font-weight:700; border-bottom:2px solid #edf1f7">パスMUF (FxEs=5MHzの場合)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td style="padding:6px 8px; border-bottom:1px solid #edf1f7; color:#3a4a60">500km</td><td style="padding:6px 8px; border-bottom:1px solid #edf1f7; text-align:center; color:#e05050; font-weight:700">約10MHz以上</td><td style="padding:6px 8px; border-bottom:1px solid #edf1f7; text-align:center; color:#3a4a60">約13MHz</td></tr>
+          <tr style="background:#fafcff"><td style="padding:6px 8px; border-bottom:1px solid #edf1f7; color:#3a4a60">1,000km</td><td style="padding:6px 8px; border-bottom:1px solid #edf1f7; text-align:center; color:#f0a500; font-weight:700">約5.3MHz以上</td><td style="padding:6px 8px; border-bottom:1px solid #edf1f7; text-align:center; color:#3a4a60">約25.5MHz</td></tr>
+          <tr><td style="padding:6px 8px; border-bottom:1px solid #edf1f7; color:#3a4a60">1,500km</td><td style="padding:6px 8px; border-bottom:1px solid #edf1f7; text-align:center; color:#2ecc71; font-weight:700">約3.6MHz以上</td><td style="padding:6px 8px; border-bottom:1px solid #edf1f7; text-align:center; color:#3a4a60">約37.8MHz ✓</td></tr>
+          <tr style="background:#fafcff"><td style="padding:6px 8px; color:#3a4a60">2,000km</td><td style="padding:6px 8px; text-align:center; color:#2ecc71; font-weight:700">約2.7MHz以上</td><td style="padding:6px 8px; text-align:center; color:#3a4a60">約50.2MHz ✓</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p style="margin-top:10px; font-size:0.78rem; color:#8090a8">
+      ※ モニターに表示するMUFはNICTが実測した値です。27MHzを超えていればCBでのEs DXの条件が整っています。
+    </p>
+  </div>
+
+  <!-- アンテナ傾けテクニック -->
+  <div class="card">
+    <div class="card-title">スキップゾーン攻略テクニック</div>
+    <h2>アンテナを傾けると届く距離が変わる</h2>
+    <p>
+      λ/4垂直ロッドアンテナは真上（仰角90°）がヌル点です。
+      アンテナをターゲット方向に傾けると、その方向の実効的な放射仰角が上がり、
+      スキップゾーン内の近距離にも電波が届きやすくなります。
+    </p>
+
+    <!-- イラスト：傾けの効果 -->
+    <div class="illust-wrap" style="margin:14px 0 8px">
+      <svg width="380" height="150" viewBox="0 0 380 150" xmlns="http://www.w3.org/2000/svg" aria-label="アンテナ傾けの効果イラスト">
+        <!-- 背景 -->
+        <rect width="380" height="150" fill="#f3f6fb" rx="8"/>
+        <!-- 地面 -->
+        <rect x="0" y="120" width="380" height="30" fill="#c8d8b0" rx="0"/>
+        <line x1="0" y1="120" x2="380" y2="120" stroke="#b0c090" stroke-width="1"/>
+
+        <!-- 左：垂直アンテナ -->
+        <text x="70" y="15" text-anchor="middle" font-size="9" font-weight="700" fill="#1a3050" font-family="sans-serif">垂直（通常）</text>
+        <!-- アンテナ本体 -->
+        <line x1="70" y1="120" x2="70" y2="72" stroke="#1a3050" stroke-width="3"/>
+        <line x1="70" y1="72" x2="58" y2="60" stroke="#1a3050" stroke-width="2"/>
+        <line x1="70" y1="72" x2="82" y2="60" stroke="#1a3050" stroke-width="2"/>
+        <!-- 最大放射方向（水平） -->
+        <line x1="70" y1="96" x2="118" y2="96" stroke="#3a7bd5" stroke-width="1.5" stroke-dasharray="4,2"/>
+        <polygon points="118,93 126,96 118,99" fill="#3a7bd5"/>
+        <text x="130" y="100" font-size="8" fill="#3a7bd5" font-family="sans-serif">最大放射</text>
+        <text x="130" y="110" font-size="8" fill="#3a7bd5" font-family="sans-serif">（仰角≒0°）</text>
+        <!-- 仰角弧 -->
+        <path d="M 95,120 A 25,25 0 0,0 95,95" stroke="#3a7bd5" stroke-width="1" fill="none" stroke-dasharray="3,2"/>
+        <!-- スキップゾーン表示 -->
+        <rect x="70" y="108" width="50" height="8" fill="#e05050" opacity="0.2" rx="2"/>
+        <text x="95" y="116" text-anchor="middle" font-size="7" fill="#c03030" font-family="sans-serif">〜740km</text>
+
+        <!-- 区切り線 -->
+        <line x1="190" y1="10" x2="190" y2="145" stroke="#dde4ee" stroke-width="1"/>
+
+        <!-- 右：傾けたアンテナ（20°） -->
+        <text x="290" y="15" text-anchor="middle" font-size="9" font-weight="700" fill="#e05050" font-family="sans-serif">20°傾け（ターゲット方向）</text>
+        <!-- 傾けたアンテナ本体 -->
+        <line x1="270" y1="120" x2="284" y2="73" stroke="#e05050" stroke-width="3"/>
+        <line x1="284" y1="73" x2="274" y2="60" stroke="#e05050" stroke-width="2"/>
+        <line x1="284" y1="73" x2="296" y2="64" stroke="#e05050" stroke-width="2"/>
+        <!-- 地面水平線 -->
+        <line x1="270" y1="120" x2="330" y2="120" stroke="#1a3050" stroke-width="1" opacity="0.3"/>
+        <!-- 傾き角 -->
+        <path d="M 290,120 A 20,20 0 0,0 284,101" stroke="#e05050" stroke-width="1" fill="none"/>
+        <text x="302" y="114" font-size="8" fill="#e05050" font-family="sans-serif">20°</text>
+        <!-- 最大放射方向（仰角20°に向く） -->
+        <line x1="270" y1="120" x2="340" y2="84" stroke="#3a7bd5" stroke-width="1.5" stroke-dasharray="4,2"/>
+        <polygon points="340,84 346,77 342,88" fill="#3a7bd5"/>
+        <text x="348" y="80" font-size="8" fill="#3a7bd5" font-family="sans-serif">仰角</text>
+        <text x="348" y="90" font-size="8" fill="#3a7bd5" font-family="sans-serif">≈20°</text>
+        <!-- スキップゾーン改善表示 -->
+        <rect x="270" y="108" width="30" height="8" fill="#e05050" opacity="0.2" rx="2"/>
+        <text x="285" y="116" text-anchor="middle" font-size="7" fill="#c03030" font-family="sans-serif">〜430km</text>
+        <rect x="300" y="108" width="30" height="8" fill="#f0a500" opacity="0.2" rx="2"/>
+        <text x="315" y="116" text-anchor="middle" font-size="7" fill="#9a6200" font-family="sans-serif">改善帯</text>
+      </svg>
+    </div>
+
+    <div style="overflow-x:auto; margin-top:4px">
+      <table style="width:100%; border-collapse:collapse; font-size:0.8rem">
+        <thead>
+          <tr style="background:#f3f6fb">
+            <th style="padding:7px 8px; text-align:left; color:#5a6a80; font-weight:700; border-bottom:2px solid #edf1f7">傾き角（垂直から）</th>
+            <th style="padding:7px 8px; text-align:center; color:#5a6a80; font-weight:700; border-bottom:2px solid #edf1f7">スキップゾーン縮小の目安</th>
+            <th style="padding:7px 8px; text-align:center; color:#5a6a80; font-weight:700; border-bottom:2px solid #edf1f7">トレードオフ</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td style="padding:6px 8px; border-bottom:1px solid #edf1f7; color:#3a4a60">0°（垂直）</td><td style="padding:6px 8px; border-bottom:1px solid #edf1f7; text-align:center; color:#3a4a60">〜740km</td><td style="padding:6px 8px; border-bottom:1px solid #edf1f7; text-align:center; color:#3a4a60">通常通り</td></tr>
+          <tr style="background:#fafcff"><td style="padding:6px 8px; border-bottom:1px solid #edf1f7; color:#3a4a60">15°</td><td style="padding:6px 8px; border-bottom:1px solid #edf1f7; text-align:center; color:#f0a500; font-weight:700">〜550km程度</td><td style="padding:6px 8px; border-bottom:1px solid #edf1f7; text-align:center; color:#3a4a60">ほぼ影響なし</td></tr>
+          <tr><td style="padding:6px 8px; border-bottom:1px solid #edf1f7; color:#3a4a60">20°</td><td style="padding:6px 8px; border-bottom:1px solid #edf1f7; text-align:center; color:#f0a500; font-weight:700">〜430km程度</td><td style="padding:6px 8px; border-bottom:1px solid #edf1f7; text-align:center; color:#3a4a60">遠距離DXへ軽微な影響</td></tr>
+          <tr style="background:#fafcff"><td style="padding:6px 8px; border-bottom:1px solid #edf1f7; color:#3a4a60">30°</td><td style="padding:6px 8px; border-bottom:1px solid #edf1f7; text-align:center; color:#2ecc71; font-weight:700">〜300km程度</td><td style="padding:6px 8px; border-bottom:1px solid #edf1f7; text-align:center; color:#f0a500">遠距離側の感度低下</td></tr>
+          <tr><td style="padding:6px 8px; color:#3a4a60">45°（斜め）</td><td style="padding:6px 8px; text-align:center; color:#2ecc71; font-weight:700">〜200km程度</td><td style="padding:6px 8px; text-align:center; color:#e05050">水平偏波に近づき特性が大きく変化</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="notice-box" style="margin-top:12px; background:#eef4ff; border-left-color:#3a7bd5; color:#1a3050">
+      <strong>実践的なポイント</strong><br>
+      ・傾ける方向はターゲット局がいる方向へ<br>
+      ・車のルーフエッジに向けて傾ける、またはアンテナ基台を斜めに固定する<br>
+      ・<strong>20〜30°が現実的な妥協点</strong>（近距離改善と遠距離DXのバランス）<br>
+      ・傾けると指向性が出るため、反対方向のDXには不利になる点に注意
+    </div>
+  </div>
+
   <!-- Es反射点シミュレーター -->
   <div class="card">
     <div class="card-title">Es反射点シミュレーター</div>
