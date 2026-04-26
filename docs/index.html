@@ -2,11 +2,10 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>CB DX Iono Monitor</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
-
     body {
       background: #edf1f7;
       color: #1a2838;
@@ -14,792 +13,195 @@
       min-height: 100dvh;
       display: flex;
       flex-direction: column;
-      padding: 8px;
-      gap: 6px;
-    }
-
-    /* ── Header ── */
-    header {
-      display: flex;
-      justify-content: space-between;
       align-items: center;
-      flex-shrink: 0;
+      padding: 24px 16px 40px;
+      gap: 16px;
     }
-    header h1 { font-size: 1rem; font-weight: 700; color: #1a3050; }
-    #update-time { font-size: 0.68rem; color: #8090a8; }
-    #obs-label { font-size: 0.58rem; opacity: 0.7; }
-    #obs-time  { font-weight: 700; color: #1a3050; }
-    #reload-btn {
-      font-size: 0.7rem; font-weight: 700;
-      padding: 4px 10px; border-radius: 6px;
-      border: none; background: #3a7bd5; color: #fff;
-      cursor: pointer;
-    }
-    #reload-btn:active { background: #2a5ba5; }
 
-    /* ── Cards ── */
-    .card {
-      background: #fff;
-      border-radius: 12px;
-      box-shadow: 0 1px 4px rgba(0,20,60,0.10), 0 0 0 1px rgba(0,20,60,0.05);
-      padding: 8px 10px;
-      flex-shrink: 0;
+    .hero {
+      text-align: center;
+      padding: 12px 0 4px;
     }
-    .card-fxes {
-      flex-shrink: 1;
-      min-height: 0;
-      position: relative;
-    }
-    .card-title {
-      font-size: 0.58rem;
+    .hero-label {
+      font-size: 0.65rem;
       font-weight: 700;
-      color: #8090a8;
-      letter-spacing: 0.1em;
+      letter-spacing: 0.2em;
+      color: #3a7bd5;
       text-transform: uppercase;
       margin-bottom: 6px;
     }
-
-    /* ── Japan Map ── */
-    .map-wrapper {
-      position: relative;
-      width: min(100%, 50dvh);
-      aspect-ratio: 1;
-      margin: 0 auto;
-    }
-    .map-wrapper svg {
-      width: 100%;
-      height: 100%;
-      display: block;
-    }
-    .island {
-      fill: rgba(80,140,70,0.12);
-      stroke: #7aaa60;
-      stroke-width: 3px;
-      stroke-linecap: round;
-      stroke-linejoin: round;
-    }
-
-    /* Station marker */
-    .map-marker {
-      position: absolute;
-      transform: translate(-50%, -50%);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      z-index: 10;
-    }
-    .marker-badge {
-      width: 76px;
-      border-radius: 6px;
-      display: flex;
-      flex-direction: column;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.22);
-      overflow: hidden;
-    }
-    .marker-name { display: none; }
-    .marker-history-rows {
-      display: flex;
-      flex-direction: column;
-      padding: 3px 5px 2px;
-      gap: 1px;
-      opacity: 0.78;
-    }
-    .marker-hist-row {
-      display: flex;
-      justify-content: space-between;
-      font-size: 0.52rem;
-      font-weight: 600;
-      line-height: 1.3;
-      gap: 3px;
-    }
-    .hist-time { opacity: 0.75; }
-    .hist-val  { font-weight: 700; }
-    .marker-latest {
-      display: flex;
-      flex-direction: row;
-      align-items: center;
-      justify-content: center;
-      gap: 2px;
-      padding: 3px 4px 4px;
-      border-top: 1px solid rgba(255,255,255,0.3);
-    }
-    .marker-val {
-      font-size: 1.3rem;
+    .hero h1 {
+      font-size: 1.5rem;
       font-weight: 800;
-      line-height: 1;
-      white-space: nowrap;
+      color: #1a3050;
+      letter-spacing: 0.03em;
+      line-height: 1.2;
     }
-    .marker-trend {
-      font-size: 1.1rem;
-      font-weight: 700;
-      line-height: 1;
-    }
-    .marker-pip { display: none; }
-
-    /* ── 3-column grid (MUF / SW) ── */
-    .three-grid {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 8px;
-    }
-    .data-cell {
-      border-radius: 8px;
-      padding: 7px 4px;
-      text-align: center;
-    }
-    .cell-label { font-size: 0.55rem; font-weight: 700; }
-    .cell-sub   { font-size: 0.48rem; opacity: 0.55; margin: 1px 0 2px; }
-    .cell-val   { font-size: 1.5rem; font-weight: 800; line-height: 1; }
-    .cell-unit  { font-size: 0.48rem; opacity: 0.65; margin-top: 1px; }
-
-    /* ── Color palette (light) ── */
-    .col-gray   { background: #f0f3f7; color: #8090a8; }
-    .col-cyan   { background: #cceeff; color: #005a8a; }
-    .col-green  { background: #50d87a; color: #083818; }
-    .col-yellow { background: #f8d020; color: #3a2800; }
-    .col-orange { background: #f07018; color: #fff; }
-    .col-pink   { background: #ffc0e8; color: #a00050; }
-    .col-red    { background: #e03030; color: #fff; }
-
-    /* ── Alert banner ── */
-    #alert-banner {
-      display: none;
-      background: #e03030;
-      color: #fff;
-      font-size: 0.85rem;
-      font-weight: 800;
-      text-align: center;
-      padding: 8px 12px;
-      border-radius: 10px;
-      letter-spacing: 0.05em;
-      animation: alert-blink 1s ease-in-out infinite alternate;
-      flex-shrink: 0;
-    }
-    @keyframes alert-blink {
-      from { opacity: 1; }
-      to   { opacity: 0.55; }
+    .hero p {
+      font-size: 0.82rem;
+      color: #5a6a80;
+      margin-top: 8px;
+      line-height: 1.7;
     }
 
-    /* ── Footer ── */
-    .obs-time {
-      font-size: 0.52rem;
-      color: #a8b8c8;
-      text-align: right;
-      margin-top: 4px;
-    }
-    #status-bar {
-      font-size: 0.55rem;
-      color: #a8b8c8;
-      text-align: center;
-      flex-shrink: 0;
-    }
-
-    /* ── LINE申込ボタン ── */
-    #line-notify-btn {
-      position: absolute;
-      bottom: 8px;
-      right: 8px;
-      background: #06c755;
-      color: #fff;
-      border: none;
-      border-radius: 8px;
-      padding: 5px 9px;
-      font-size: 0.65rem;
-      font-weight: 700;
-      cursor: pointer;
-      z-index: 20;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.25);
-      display: flex;
-      align-items: center;
-      gap: 4px;
-    }
-    #line-notify-btn:active { filter: brightness(0.88); }
-
-    /* ── LINEモーダル ── */
-    #line-modal-overlay {
-      display: none;
-      position: fixed;
-      inset: 0;
-      background: rgba(0,0,0,0.55);
-      z-index: 200;
-      align-items: center;
-      justify-content: center;
-    }
-    #line-modal-overlay.open { display: flex; }
-    #line-modal {
+    .card {
       background: #fff;
-      border-radius: 16px;
-      padding: 22px 20px 18px;
-      max-width: 310px;
-      width: 90%;
-      text-align: center;
-      position: relative;
+      border-radius: 14px;
+      box-shadow: 0 1px 4px rgba(0,20,60,0.10), 0 0 0 1px rgba(0,20,60,0.05);
+      padding: 16px;
+      width: 100%;
+      max-width: 420px;
     }
-    #line-modal-close {
-      position: absolute;
-      top: 10px; right: 14px;
-      font-size: 1.2rem;
-      background: none;
-      border: none;
-      cursor: pointer;
+    .card-title {
+      font-size: 0.6rem;
+      font-weight: 700;
       color: #8090a8;
-      line-height: 1;
-    }
-    #line-modal h2 {
-      font-size: 1rem;
-      font-weight: 800;
-      color: #06c755;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
       margin-bottom: 12px;
     }
-    #line-modal .modal-desc {
-      font-size: 0.78rem;
-      color: #3a4a5a;
-      line-height: 1.75;
-      text-align: left;
-      margin-bottom: 14px;
-    }
-    #line-modal .modal-desc li { margin-left: 1.2em; margin-bottom: 2px; }
-    #qrcode-container {
+
+    /* ナビゲーションボタン */
+    .nav-btn {
       display: flex;
-      justify-content: center;
-      margin: 8px 0 10px;
-    }
-    #qrcode-container canvas,
-    #qrcode-container img {
-      border-radius: 8px;
-      border: 3px solid #06c755;
-    }
-    #line-add-btn {
-      display: inline-flex;
       align-items: center;
-      gap: 6px;
-      background: #06c755;
-      color: #fff;
-      text-decoration: none;
-      font-size: 0.9rem;
-      font-weight: 800;
-      padding: 10px 20px;
+      gap: 12px;
+      width: 100%;
+      padding: 14px 16px;
       border-radius: 10px;
-      margin-bottom: 14px;
-      box-shadow: 0 2px 8px rgba(6,199,85,0.35);
-    }
-    #line-add-btn:active { filter: brightness(0.88); }
-    .modal-divider {
-      font-size: 0.68rem;
-      color: #b0b8c8;
+      border: none;
+      font-family: inherit;
+      font-size: 0.95rem;
+      font-weight: 700;
+      cursor: pointer;
+      text-decoration: none;
       margin-bottom: 10px;
+      transition: filter 0.15s;
     }
-    #line-modal .modal-hint {
-      font-size: 0.68rem;
+    .nav-btn:last-child { margin-bottom: 0; }
+    .nav-btn:active { filter: brightness(0.92); }
+    .nav-btn .icon {
+      font-size: 1.4rem;
+      flex-shrink: 0;
+      width: 36px;
+      text-align: center;
+    }
+    .nav-btn .btn-text { flex: 1; text-align: left; }
+    .nav-btn .btn-sub { font-size: 0.7rem; font-weight: 400; opacity: 0.75; display: block; margin-top: 1px; }
+    .nav-btn .arrow { color: rgba(255,255,255,0.6); font-size: 1rem; }
+
+    .btn-monitor { background: #1a3050; color: #fff; }
+    .btn-guide   { background: #3a7bd5; color: #fff; }
+    .btn-line    { background: #06c755; color: #fff; }
+
+    /* 出典 */
+    .source-list { list-style: none; }
+    .source-list li {
+      font-size: 0.78rem;
+      color: #5a6a80;
+      padding: 5px 0;
+      border-bottom: 1px solid #edf1f7;
+      display: flex;
+      gap: 8px;
+      align-items: flex-start;
+      line-height: 1.5;
+    }
+    .source-list li:last-child { border-bottom: none; }
+    .src-badge {
+      font-size: 0.6rem;
+      font-weight: 700;
+      color: #fff;
+      background: #3a7bd5;
+      border-radius: 4px;
+      padding: 1px 5px;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+
+    /* 免責事項 */
+    .disclaimer {
+      font-size: 0.72rem;
       color: #8090a8;
-      line-height: 1.6;
+      line-height: 1.75;
+    }
+    .disclaimer strong { color: #5a6a80; }
+
+    /* フッター */
+    footer {
+      font-size: 0.6rem;
+      color: #a0aab8;
+      text-align: center;
+      margin-top: 8px;
     }
   </style>
 </head>
 <body>
 
-  <header>
+  <div class="hero">
+    <div class="hero-label">JQ3JQO / KyotoDR120</div>
     <h1>CB DX Iono Monitor</h1>
-    <div id="update-time"><span id="obs-label">観測</span> <span id="obs-time">--:--</span></div>
-    <button id="reload-btn" onclick="fetchAllData()">更新</button>
-  </header>
-
-  <div id="alert-banner">⚠ FxEs アラート — スポラディックE 強電離層</div>
-
-  <!-- ── FxEs + Japan map ── -->
-  <div class="card card-fxes">
-    <div class="card-title">FxEs — Sporadic E</div>
-    <div class="map-wrapper">
-
-      <!--
-        japan-map.svg を inline 展開（viewBox="0 0 424.69 424.87"）
-        島の対応:
-          element5 (upper-right rect)        → 北海道
-          element4 (center L-shape)          → 本州
-          element3 (lower-center rect)       → 四国
-          element2 (lower-left path)         → 九州
-          element1 (upper-left small path)   → 沖縄（模式配置）
-        マーカー位置:
-          沖縄   element1 center ≈ (94, 90)  → 22.1% 21.2%
-          鹿児島 element2 南部   ≈ (44,385)  → 10.4% 90.6%
-          東京   element4 右上   ≈ (330,205) → 77.7% 48.2%
-          北海道 element5 center ≈ (363, 52) → 85.5% 12.2%
-      -->
-      <svg viewBox="0 0 424.69 424.87" xmlns="http://www.w3.org/2000/svg">
-        <!-- 沖縄（模式） -->
-        <path class="island" d="M124.91,55.12l-7.07-7.07c-2.06-2.06-5.39-2.06-7.45,0l-13.85,13.85c-1.92,1.92-5,2.07-7.09.33l-1.7-1.41c-2.24-1.86-5.56-1.55-7.42.69l-1.73,2.09c-1.86,2.24-1.55,5.56.69,7.42h0c2.39,1.98,2.55,5.59.36,7.78l-18.41,18.41v21.71c0,2.91,2.36,5.27,5.27,5.27h6.94c2.91,0,5.27-2.36,5.27-5.27v-7.97c0-1.4.56-2.74,1.54-3.73l44.65-44.65c2.06-2.06,2.06-5.39,0-7.45Z"/>
-        <!-- 九州 -->
-        <path class="island" d="M79.63,422.87H27.31c-4.6,0-8.32-3.73-8.32-8.32v-55.3c0-3.51-2.2-6.64-5.5-7.83l-5.98-2.15c-3.3-1.19-5.5-4.32-5.5-7.83v-36.36c0-4.6,3.73-8.32,8.32-8.32h69.31c4.6,0,8.32,3.73,8.32,8.32v109.47c0,4.6-3.73,8.32-8.32,8.32Z"/>
-        <!-- 四国 -->
-        <rect class="island" x="100.14" y="338.81" width="87.94" height="42.12" rx="3.75" ry="3.75"/>
-        <!-- 本州 -->
-        <path class="island" d="M373.42,157.68v166.51c0,3.35-2.72,6.06-6.06,6.06h-21.09c-3.35,0-6.06,2.72-6.06,6.06v12.93c0,3.35-2.72,6.06-6.06,6.06h-72.33c-3.35,0-6.06,2.72-6.06,6.06v12.93c0,3.35-2.72,6.06-6.06,6.06h-42.77c-3.35,0-6.06-2.72-6.06-6.06v-41.64c0-3.35-2.72-6.06-6.06-6.06h-88.66c-3.35,0-6.06-2.72-6.06-6.06v-51.5c0-3.35,2.72-6.06,6.06-6.06h143.83c3.35,0,6.06-2.72,6.06-6.06v-37.98c0-3.35,2.72-6.06,6.06-6.06h29.26c3.35,0,6.06-2.72,6.06-6.06v-76.55c0-3.35,2.72-6.06,6.06-6.06h63.88c3.35,0,6.06,2.72,6.06,6.06v27.44Z"/>
-        <!-- 北海道 -->
-        <path class="island" d="M357.94,2h56.11c4.77,0,8.64,3.87,8.64,8.64v83.23c0,4.77-3.87,8.64-8.64,8.64h-75.98c-2.24,0-4.4.87-6.01,2.43l-3.7,3.59c-1.61,1.56-3.76,2.43-6.01,2.43h-15.74c-4.77,0-8.64-3.87-8.64-8.64V10.64c0-4.77,3.87-8.64,8.64-8.64h51.33Z"/>
-      </svg>
-
-      <div class="map-marker" id="map-ok" style="left:34.5%;top:27.7%">
-        <div class="marker-badge col-gray">
-          <div class="marker-history-rows">
-            <div class="marker-hist-row"><span class="hist-time">--:--</span><span class="hist-val">--</span></div>
-            <div class="marker-hist-row"><span class="hist-time">--:--</span><span class="hist-val">--</span></div>
-            <div class="marker-hist-row"><span class="hist-time">--:--</span><span class="hist-val">--</span></div>
-          </div>
-          <div class="marker-latest">
-            <span class="marker-val">--</span>
-            <div class="marker-trend">➡</div>
-          </div>
-        </div>
-      </div>
-
-      <div class="map-marker" id="map-yg" style="left:17.4%;top:90.6%">
-        <div class="marker-badge col-gray">
-          <div class="marker-history-rows">
-            <div class="marker-hist-row"><span class="hist-time">--:--</span><span class="hist-val">--</span></div>
-            <div class="marker-hist-row"><span class="hist-time">--:--</span><span class="hist-val">--</span></div>
-            <div class="marker-hist-row"><span class="hist-time">--:--</span><span class="hist-val">--</span></div>
-          </div>
-          <div class="marker-latest">
-            <span class="marker-val">--</span>
-            <div class="marker-trend">➡</div>
-          </div>
-        </div>
-      </div>
-
-      <div class="map-marker" id="map-to" style="left:77.7%;top:68.2%">
-        <div class="marker-badge col-gray">
-          <div class="marker-history-rows">
-            <div class="marker-hist-row"><span class="hist-time">--:--</span><span class="hist-val">--</span></div>
-            <div class="marker-hist-row"><span class="hist-time">--:--</span><span class="hist-val">--</span></div>
-            <div class="marker-hist-row"><span class="hist-time">--:--</span><span class="hist-val">--</span></div>
-          </div>
-          <div class="marker-latest">
-            <span class="marker-val">--</span>
-            <div class="marker-trend">➡</div>
-          </div>
-        </div>
-      </div>
-
-      <div class="map-marker" id="map-wk" style="left:78.5%;top:12.2%">
-        <div class="marker-badge col-gray">
-          <div class="marker-history-rows">
-            <div class="marker-hist-row"><span class="hist-time">--:--</span><span class="hist-val">--</span></div>
-            <div class="marker-hist-row"><span class="hist-time">--:--</span><span class="hist-val">--</span></div>
-            <div class="marker-hist-row"><span class="hist-time">--:--</span><span class="hist-val">--</span></div>
-          </div>
-          <div class="marker-latest">
-            <span class="marker-val">--</span>
-            <div class="marker-trend">➡</div>
-          </div>
-        </div>
-      </div>
-
-    </div>
-
-    <!-- LINE申込ボタン -->
-    <button id="line-notify-btn" onclick="openLineModal()">
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.03 2 11c0 3.08 1.72 5.79 4.34 7.54L5.5 22l4.28-2.09A10.7 10.7 0 0 0 12 20c5.52 0 10-4.03 10-9S17.52 2 12 2Z"/></svg>
-      LINE通知
-    </button>
-
+    <p>スポラディックE層（Es）の発生状況を<br>リアルタイムで監視するツールです</p>
   </div>
 
-  <!-- ── LINEモーダル ── -->
-  <div id="line-modal-overlay" onclick="handleOverlayClick(event)">
-    <div id="line-modal">
-      <button id="line-modal-close" onclick="closeLineModal()">✕</button>
-      <h2>📲 LINE通知を受け取る</h2>
-      <div class="modal-desc">
-        <ul>
-          <li>沖縄・鹿児島・東京・北海道の<strong>全地点</strong>でFxEsが<strong>7.0 MHz超</strong>を検出すると通知が届きます</li>
-          <li>データは約5分ごとに更新されるため、タイムラグが生じます</li>
-          <li>登録後、受信する曜日・時間帯を設定できます</li>
-        </ul>
-      </div>
-      <a href="https://line.me/R/ti/p/@704rqoiy" target="_blank" id="line-add-btn">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.03 2 11c0 3.08 1.72 5.79 4.34 7.54L5.5 22l4.28-2.09A10.7 10.7 0 0 0 12 20c5.52 0 10-4.03 10-9S17.52 2 12 2Z"/></svg>
-        LINEで友だち追加
-      </a>
-      <div class="modal-divider">または（別端末からQRコードをスキャン）</div>
-      <div id="qrcode-container"><div id="qrcode"></div></div>
-      <div class="modal-hint">LINEで「@704rqoiy」を検索することもできます</div>
-    </div>
-  </div>
-
-  <!-- ── MUF ── -->
+  <!-- ナビゲーション -->
   <div class="card">
-    <div class="card-title">MUF — 最高使用可能周波数</div>
-    <div class="three-grid">
-      <div class="data-cell col-gray" id="muf-ok">
-        <div class="cell-label">沖縄 OK426</div>
-        <div class="cell-sub">500km</div>
-        <div class="cell-val">--</div>
-        <div class="cell-unit">MHz</div>
-      </div>
-      <div class="data-cell col-gray" id="muf-yg">
-        <div class="cell-label">鹿児島 YG431</div>
-        <div class="cell-sub">1000km</div>
-        <div class="cell-val">--</div>
-        <div class="cell-unit">MHz</div>
-      </div>
-      <div class="data-cell col-gray" id="muf-to">
-        <div class="cell-label">東京 TO536</div>
-        <div class="cell-sub">1500km</div>
-        <div class="cell-val">--</div>
-        <div class="cell-unit">MHz</div>
-      </div>
-    </div>
+    <div class="card-title">メニュー</div>
+    <a class="nav-btn btn-monitor" href="monitor.html">
+      <span class="icon">📡</span>
+      <span class="btn-text">
+        モニターを開く
+        <span class="btn-sub">FxEs・MUF・宇宙天気のリアルタイム表示</span>
+      </span>
+      <span class="arrow">›</span>
+    </a>
+    <a class="nav-btn btn-guide" href="guide.html">
+      <span class="icon">📖</span>
+      <span class="btn-text">
+        電波伝播・使い方の解説
+        <span class="btn-sub">Es伝播のしくみ・画面の見方</span>
+      </span>
+      <span class="arrow">›</span>
+    </a>
+    <a class="nav-btn btn-line" href="https://line.me/R/ti/p/@704rqoiy" target="_blank">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" style="flex-shrink:0"><path d="M12 2C6.48 2 2 6.03 2 11c0 3.08 1.72 5.79 4.34 7.54L5.5 22l4.28-2.09A10.7 10.7 0 0 0 12 20c5.52 0 10-4.03 10-9S17.52 2 12 2Z"/></svg>
+      <span class="btn-text">
+        LINE通知を受け取る
+        <span class="btn-sub">Es発生時にLINEで通知が届きます</span>
+      </span>
+      <span class="arrow">›</span>
+    </a>
   </div>
 
-  <!-- ── Space Weather ── -->
+  <!-- データ出典 -->
   <div class="card">
-    <div class="card-title">宇宙天気</div>
-    <div class="three-grid">
-      <div class="data-cell col-gray" id="sw-xray">
-        <div class="cell-label">X線</div>
-        <div class="cell-sub">GOES</div>
-        <div class="cell-val">--</div>
-        <div class="cell-unit">flux</div>
-      </div>
-      <div class="data-cell col-gray" id="sw-kp">
-        <div class="cell-label">Kp</div>
-        <div class="cell-sub">惑星指数</div>
-        <div class="cell-val">--</div>
-        <div class="cell-unit">&nbsp;</div>
-      </div>
-      <div class="data-cell col-gray" id="sw-f107">
-        <div class="cell-label">F10.7</div>
-        <div class="cell-sub">太陽電波</div>
-        <div class="cell-val">--</div>
-        <div class="cell-unit">sfu</div>
-      </div>
-    </div>
+    <div class="card-title">データ出典</div>
+    <ul class="source-list">
+      <li>
+        <span class="src-badge">FxEs</span>
+        NICT 電離圏観測ネットワーク（沖縄・鹿児島・東京・北海道）
+      </li>
+      <li>
+        <span class="src-badge">MUF</span>
+        NICT 短波通信最高使用可能周波数
+      </li>
+      <li>
+        <span class="src-badge">宇宙天気</span>
+        NOAA Space Weather Prediction Center（X線・Kp・F10.7）
+      </li>
+    </ul>
   </div>
 
-  <div id="status-bar">データ取得中...</div>
+  <!-- 免責事項 -->
+  <div class="card">
+    <div class="card-title">免責事項</div>
+    <p class="disclaimer">
+      本ツールは<strong>個人が制作したアマチュア無線・市民ラジオDX向けの非公式サービス</strong>です。<br><br>
+      表示するデータはNICT・NOAAの公開情報を取得・加工したものです。データの<strong>完全性・正確性・即時性は保証されません</strong>。観測上のギャップや通信エラーにより欠損が生じる場合があります。<br><br>
+      本ツールの利用により生じたいかなる損害・不利益についても、制作者は一切の責任を負いません。<strong>情報の利用は自己責任</strong>でお願いします。
+    </p>
+  </div>
 
-  <script>
-    // ── Color helpers ─────────────────────────────────────────
-    function fxesClass(raw) {
-      if (!raw || raw === '--') return 'col-gray';
-      const v = parseFloat(raw);
-      if (isNaN(v))  return 'col-gray';
-      if (v >= 9.0)  return 'col-red';
-      if (v >= 8.0)  return 'col-pink';
-      if (v >= 7.0)  return 'col-yellow';
-      return 'col-cyan';
-    }
-    function mufClass(v) {
-      if (v == null || v <= 0) return 'col-gray';
-      if (v >= 25.0) return 'col-orange';
-      if (v >= 20.0) return 'col-yellow';
-      return 'col-green';
-    }
-    function xrayClass(v) {
-      if (v == null) return 'col-gray';
-      if (v >= 1e-4) return 'col-red';
-      if (v >= 1e-5) return 'col-orange';
-      if (v >= 1e-6) return 'col-yellow';
-      return 'col-green';
-    }
-    function xrayLabel(v) {
-      if (v == null) return '--';
-      if (v >= 1e-4) return 'X' + (v / 1e-4).toFixed(1);
-      if (v >= 1e-5) return 'M' + (v / 1e-5).toFixed(1);
-      if (v >= 1e-6) return 'C' + (v / 1e-6).toFixed(1);
-      if (v >= 1e-7) return 'B' + (v / 1e-7).toFixed(1);
-      return 'A';
-    }
-    function kpClass(v) {
-      if (v == null) return 'col-gray';
-      if (v >= 5.0)  return 'col-red';
-      if (v >= 3.0)  return 'col-orange';
-      return 'col-green';
-    }
-    function f107Class(v) {
-      if (v == null) return 'col-gray';
-      if (v >= 180)  return 'col-red';
-      if (v >= 120)  return 'col-orange';
-      return 'col-green';
-    }
+  <footer>© 2026 JQ3JQO / KyotoDR120 — Unofficial personal tool</footer>
 
-    // ── DOM helpers ───────────────────────────────────────────
-    function recolor(el, cls) {
-      el.className = el.className.replace(/col-\w+/g, cls);
-    }
-    function trendArrow(now, prev) {
-      // 観測なし（--）または prev なし → ESP32と同じく TREND_FLAT = →
-      if (now === null || now === '--') return '➡';
-      if (prev === null || prev === '--') return '➡';
-      const d = parseFloat(now) - parseFloat(prev);
-      if (d >  0.5) return '⬆';
-      if (d < -0.5) return '⬇';
-      return '➡';
-    }
-    function trendColor(arrow) {
-      if (arrow === '⬆') return '#c02020';
-      if (arrow === '⬇') return '#0070b0';
-      return '#8090a8';
-    }
-    function setMarker(id, cls, val, arrow, history) {
-      const el = document.getElementById(id);
-      recolor(el.querySelector('.marker-badge'), cls);
-      el.querySelector('.marker-val').textContent = val;
-      const t = el.querySelector('.marker-trend');
-      t.textContent = arrow ?? '➡';
-      t.style.color = cls === 'col-red' ? '#fff' : trendColor(arrow);
-      // 過去3行を更新
-      const histRows = el.querySelectorAll('.marker-hist-row');
-      for (let i = 0; i < histRows.length; i++) {
-        const h = history && history[i] ? history[i] : null;
-        histRows[i].querySelector('.hist-time').textContent = h ? h.time : '--:--';
-        const valEl = histRows[i].querySelector('.hist-val');
-        valEl.textContent = h ? h.val : '--';
-        if (h && h.alert) {
-          // バッジが赤い時は黄色、それ以外は赤で太字
-          valEl.style.color      = cls === 'col-red' ? '#ffdd44' : '#e03030';
-          valEl.style.fontWeight = '800';
-        } else {
-          valEl.style.color      = '';
-          valEl.style.fontWeight = '';
-        }
-      }
-    }
-    function setCell(id, cls, val) {
-      const el = document.getElementById(id);
-      recolor(el, cls);
-      el.querySelector('.cell-val').textContent = val;
-    }
-
-    // ── Render ────────────────────────────────────────────────
-    function render(data) {
-      // FxEs markers
-      const fxes = data.fxes;
-      for (const k of ['ok', 'yg', 'to', 'wk']) {
-        const raw  = fxes ? fxes[k]          : null;
-        const prev = fxes ? fxes[k + '_prev'] : null;
-        const val  = (raw && raw !== '--') ? parseFloat(raw).toFixed(1) : '--';
-        const arrow = trendArrow(raw, prev);
-        // 過去3行（最新を除いた直近3行）
-        const hist = fxes && fxes.history
-          ? fxes.history.slice(0, -1).map(r => ({
-              time: r.time,
-              val: r[k] != null ? parseFloat(r[k]).toFixed(1) : '--',
-              alert: r[k] != null && parseFloat(r[k]) >= 9.0
-            }))
-          : [];
-        setMarker('map-' + k, fxesClass(raw), val, arrow, hist);
-      }
-      checkAlert(fxes);
-
-      // MUF
-      const muf = data.muf || {};
-      for (const k of ['ok', 'yg', 'to'])
-        setCell('muf-' + k, mufClass(muf[k] ?? null),
-          muf[k] != null ? muf[k].toFixed(1) : '--');
-
-      // Space weather
-      setCell('sw-xray',  xrayClass(data.xray),  xrayLabel(data.xray));
-      setCell('sw-kp',    kpClass(data.kp),
-        data.kp  != null ? data.kp.toFixed(1)        : '--');
-      setCell('sw-f107',  f107Class(data.f107),
-        data.f107 != null ? Math.round(data.f107).toString() : '--');
-
-      // FxEs観測時刻をヘッダーに表示
-      if (data.fxes && data.fxes.time) {
-        document.getElementById('obs-time').textContent = data.fxes.time + ' JST';
-      }
-      // 取得時刻をステータスバーに表示
-      const jst = new Date(new Date(data.fetchedAt).getTime() + 9 * 3600000);
-      const hh = String(jst.getUTCHours()).padStart(2, '0');
-      const mm = String(jst.getUTCMinutes()).padStart(2, '0');
-      document.getElementById('status-bar').textContent =
-        '取得 ' + hh + ':' + mm + ' | 15分ごと更新 | Data: NICT / NOAA SWPC';
-    }
-
-    // ── アラートバナー（LINE送信はCron Workerが担当） ────────────
-    function checkAlert(fxes) {
-      const banner = document.getElementById('alert-banner');
-      if (!fxes) { banner.style.display = 'none'; return; }
-      const isOver = k => { const v = parseFloat(fxes[k]); return !isNaN(v) && v >= 9.0; };
-      const anyTriggered = ['ok', 'yg', 'to', 'wk'].some(isOver);
-      banner.style.display = anyTriggered ? 'block' : 'none';
-    }
-
-    // ── ブラウザ直接取得 ──────────────────────────────────────
-    const PROXY    = 'https://iono-line-alert.yotsuzeki.workers.dev/?url=';
-    const FXES_URL = 'https://wdc.nict.go.jp/Ionosphere/realtime/fxEs/latest-fxEs.html';
-    const MUF_URL  = 'https://wdc.nict.go.jp/Ionosphere/realtime/oblver/index.html';
-    const XRAY_URL = 'https://services.swpc.noaa.gov/json/goes/primary/xrays-6-hour.json';
-    const KP_URL   = 'https://services.swpc.noaa.gov/json/planetary_k_index_1m.json';
-    const F107_URL = 'https://services.swpc.noaa.gov/json/solar-cycle/f10-7cm-flux.json';
-
-    // ── パーサー（fetch-data.jsと同等） ───────────────────────
-    // ESP32スケッチ fetchFxEsData() と同一ロジック
-    // ・全行を取得し、最新行と直前行を特定してtrend計算
-    // ・isFxToken: "-", "---", "----" および数値を受け入れ（時刻で行を特定し値は後付け）
-    function parseFxEs(html) {
-      let plain = '';
-      let inTag = false;
-      for (let i = 0; i < html.length; i++) {
-        const c = html[i];
-        if (c === '<') { inTag = true; continue; }
-        if (c === '>') { inTag = false; continue; }
-        if (inTag) continue;
-        if (c === '\r') continue;
-        if (c === '\n' || c === '\t') { plain += '\n'; continue; }
-        const code = c.charCodeAt(0);
-        plain += (code >= 32 && code <= 126) ? c : ' ';
-      }
-      const tokens = plain.split('\n').map(l => l.trim()).filter(l => l.length > 0);
-
-      const isDate = s => /^\d{4}\/\d{2}\/\d{2}$/.test(s);
-      const isTime = s => /^\d{2}:\d{2}$/.test(s);
-      // ESP32 isFxToken: "-", "---", "----" と数値を受け入れ
-      const isFx   = s => /^-+$/.test(s) || /^\d*\.?\d+$/.test(s);
-      // "----"系 → null（観測なし）、数値 → float、それ以外 → null
-      const toVal  = s => /^-+$/.test(s) ? null : parseFloat(s);
-
-      // 全行をパース（時刻でアンカー、次の4トークンを値として取る）
-      const rows = [];
-      for (let i = 0; i < tokens.length - 4; i++) {
-        const sp = tokens[i].indexOf(' ');
-        if (sp <= 0) continue;
-        const d = tokens[i].substring(0, sp).trim();
-        const t = tokens[i].substring(sp + 1).trim();
-        if (isDate(d) && isTime(t) &&
-            isFx(tokens[i+1]) && isFx(tokens[i+2]) &&
-            isFx(tokens[i+3]) && isFx(tokens[i+4])) {
-          rows.push({ date: d, time: t,
-            ok: toVal(tokens[i+1]), yg: toVal(tokens[i+2]),
-            to: toVal(tokens[i+3]), wk: toVal(tokens[i+4]) });
-          i += 4;
-        }
-      }
-      if (rows.length === 0) return null;
-
-      // 日付+時刻で昇順ソート（日付跨ぎ対応）
-      rows.sort((a, b) => {
-        const da = a.date + ' ' + a.time;
-        const db = b.date + ' ' + b.time;
-        return da < db ? -1 : da > db ? 1 : 0;
-      });
-
-      // 直近4行を取得
-      const recent = rows.slice(-4);
-      const latest = recent[recent.length - 1];
-      const prev   = recent.length >= 2 ? recent[recent.length - 2] : null;
-
-      // _prev に直前行の値を付加（trend計算用）
-      for (const k of ['ok', 'yg', 'to', 'wk'])
-        latest[k + '_prev'] = prev ? prev[k] : null;
-
-      // history: recent の各行を文字列化して保持（render で使用）
-      latest.history = recent.map(r => {
-        const h = { time: r.time };
-        for (const k of ['ok', 'yg', 'to', 'wk'])
-          h[k] = r[k]; // null or number（renderで加工）
-        return h;
-      });
-
-      // 表示用に null → '--'、数値 → 文字列
-      for (const k of ['ok', 'yg', 'to', 'wk'])
-        latest[k] = latest[k] != null ? latest[k].toFixed(1) : '--';
-
-      return latest;
-    }
-
-    function parseMuf(html) {
-      const result = { ok: null, yg: null, to: null };
-      let curStation = '', inFregion = false;
-      for (const raw of html.split('\n')) {
-        if (raw.includes('Station')) {
-          if      (raw.includes('OK426')) { curStation = 'ok'; inFregion = false; }
-          else if (raw.includes('YG431')) { curStation = 'yg'; inFregion = false; }
-          else if (raw.includes('TO536')) { curStation = 'to'; inFregion = false; }
-          else curStation = '';
-        }
-        if (raw.includes('F region')) inFregion = true;
-        if (raw.includes('E region')) inFregion = false;
-        if (inFregion && curStation && result[curStation] === null) {
-          const ln = raw.trim();
-          const c1 = ln.indexOf(',');
-          if (c1 < 0) continue;
-          const dist = parseInt(ln.substring(0, c1).trim());
-          if (dist !== { ok: 500, yg: 1000, to: 1500 }[curStation]) continue;
-          const c2 = ln.indexOf(',', c1 + 1);
-          if (c2 < 0) continue;
-          const pipeIdx = ln.indexOf('|', c2);
-          const mufStr = pipeIdx > 0 ? ln.substring(c2 + 1, pipeIdx) : ln.substring(c2 + 1, c2 + 8);
-          const v = parseFloat(mufStr.trim());
-          if (v > 0) result[curStation] = v;
-        }
-      }
-      return result;
-    }
-
-    // ── データ取得メイン ──────────────────────────────────────
-    async function fetchAllData() {
-      const btn = document.getElementById('reload-btn');
-      btn.textContent = '取得中…';
-      btn.disabled = true;
-      document.getElementById('status-bar').textContent = 'データ取得中...';
-      const ts = '?_=' + Date.now();
-      try {
-        const [fxesText, mufText, xrayArr, kpArr, f107Arr] = await Promise.all([
-          fetch(PROXY + encodeURIComponent(FXES_URL + ts)).then(r => r.text()),
-          fetch(PROXY + encodeURIComponent(MUF_URL  + ts)).then(r => r.text()),
-          fetch(XRAY_URL + ts).then(r => r.json()),
-          fetch(KP_URL   + ts).then(r => r.json()),
-          fetch(F107_URL + ts).then(r => r.json()),
-        ]);
-
-        // parseFxEs内で最新行と直前行を比較済み（ESP32と同一ロジック）
-        const fxes = parseFxEs(fxesText);
-
-        // NOAA パース
-        let xray = null, kp = null, f107 = null;
-        for (let i = xrayArr.length - 1; i >= 0; i--) { if (xrayArr[i].flux > 0) { xray = xrayArr[i].flux; break; } }
-        for (let i = kpArr.length   - 1; i >= 0; i--) { if (kpArr[i].kp_index >= 0) { kp = kpArr[i].kp_index; break; } }
-        for (let i = f107Arr.length - 1; i >= 0; i--) { const v = f107Arr[i]['f10.7'] ?? f107Arr[i].flux; if (v > 0) { f107 = v; break; } }
-
-        render({ fetchedAt: new Date().toISOString(), fxes, muf: parseMuf(mufText), xray, kp, f107 });
-      } catch (e) {
-        document.getElementById('status-bar').textContent = '取得失敗: ' + e.message;
-      }
-      btn.textContent = '更新';
-      btn.disabled = false;
-    }
-
-    fetchAllData();
-    setInterval(fetchAllData, 15 * 60 * 1000);
-
-    // ── LINE申込モーダル ────────────────────────────────────────
-    let _qrGenerated = false;
-    function openLineModal() {
-      document.getElementById('line-modal-overlay').classList.add('open');
-      if (_qrGenerated) return;
-      // QRCode.jsをモーダル表示時に遅延読み込み（ページ初期ロードをブロックしない）
-      const s = document.createElement('script');
-      s.src = 'https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js';
-      s.onload = () => {
-        new QRCode(document.getElementById('qrcode'), {
-          text: 'https://line.me/R/ti/p/@704rqoiy',
-          width: 160,
-          height: 160,
-          colorDark: '#06c755',
-          colorLight: '#ffffff',
-        });
-        _qrGenerated = true;
-      };
-      document.head.appendChild(s);
-    }
-    function closeLineModal() {
-      document.getElementById('line-modal-overlay').classList.remove('open');
-    }
-    function handleOverlayClick(e) {
-      if (e.target === document.getElementById('line-modal-overlay')) closeLineModal();
-    }
-  </script>
 </body>
 </html>

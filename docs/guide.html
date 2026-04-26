@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>電波伝播の解説 — CB DX Iono Monitor</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: #edf1f7;
+      color: #1a2838;
+      font-family: -apple-system, 'Helvetica Neue', sans-serif;
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 24px 16px 48px;
+      gap: 16px;
+    }
+
+    .top-bar {
+      width: 100%;
+      max-width: 520px;
+    }
+    .back-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.8rem;
+      color: #3a7bd5;
+      text-decoration: none;
+      font-weight: 600;
+    }
+    .back-btn:active { opacity: 0.6; }
+
+    .hero {
+      text-align: center;
+      padding: 8px 0 4px;
+    }
+    .hero-label {
+      font-size: 0.62rem;
+      font-weight: 700;
+      letter-spacing: 0.2em;
+      color: #3a7bd5;
+      text-transform: uppercase;
+      margin-bottom: 6px;
+    }
+    .hero h1 {
+      font-size: 1.35rem;
+      font-weight: 800;
+      color: #1a3050;
+      letter-spacing: 0.02em;
+      line-height: 1.25;
+    }
+    .hero p {
+      font-size: 0.82rem;
+      color: #5a6a80;
+      margin-top: 8px;
+      line-height: 1.7;
+    }
+
+    .card {
+      background: #fff;
+      border-radius: 14px;
+      box-shadow: 0 1px 4px rgba(0,20,60,0.10), 0 0 0 1px rgba(0,20,60,0.05);
+      padding: 20px 18px;
+      width: 100%;
+      max-width: 520px;
+    }
+    .card-title {
+      font-size: 0.6rem;
+      font-weight: 700;
+      color: #8090a8;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      margin-bottom: 14px;
+    }
+    h2 {
+      font-size: 1rem;
+      font-weight: 800;
+      color: #1a3050;
+      margin-bottom: 10px;
+      line-height: 1.3;
+    }
+    p {
+      font-size: 0.85rem;
+      color: #3a4a60;
+      line-height: 1.85;
+      margin-bottom: 10px;
+    }
+    p:last-child { margin-bottom: 0; }
+
+    /* SVGイラスト */
+    .illust-wrap {
+      width: 100%;
+      overflow-x: auto;
+      margin: 14px 0 6px;
+    }
+    .illust-wrap svg {
+      display: block;
+      margin: 0 auto;
+      max-width: 100%;
+    }
+
+    /* FxEs カラー説明 */
+    .fxes-scale {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-top: 4px;
+    }
+    .fxes-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .fxes-dot {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .fxes-row-text {
+      font-size: 0.82rem;
+      color: #3a4a60;
+      line-height: 1.5;
+    }
+    .fxes-row-text strong {
+      color: #1a2838;
+    }
+
+    /* ステップ説明 */
+    .step-list {
+      list-style: none;
+      margin-top: 4px;
+    }
+    .step-list li {
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+      padding: 9px 0;
+      border-bottom: 1px solid #edf1f7;
+      font-size: 0.84rem;
+      color: #3a4a60;
+      line-height: 1.6;
+    }
+    .step-list li:last-child { border-bottom: none; }
+    .step-num {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: #3a7bd5;
+      color: #fff;
+      font-size: 0.7rem;
+      font-weight: 800;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-top: 1px;
+    }
+
+    /* 距離計算ボックス */
+    .formula-box {
+      background: #f3f6fb;
+      border-radius: 8px;
+      padding: 12px 14px;
+      margin-top: 10px;
+      font-size: 0.82rem;
+      color: #3a4a60;
+      line-height: 1.8;
+    }
+    .formula-box .formula {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: #1a3050;
+      margin: 4px 0;
+    }
+
+    /* CTAボタン */
+    .cta-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      width: 100%;
+      padding: 15px 16px;
+      border-radius: 10px;
+      background: #1a3050;
+      color: #fff;
+      font-family: inherit;
+      font-size: 0.95rem;
+      font-weight: 700;
+      text-decoration: none;
+      margin-top: 4px;
+      transition: filter 0.15s;
+    }
+    .cta-btn:active { filter: brightness(0.88); }
+
+    footer {
+      font-size: 0.6rem;
+      color: #a0aab8;
+      text-align: center;
+      margin-top: 8px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="top-bar">
+    <a class="back-btn" href="index.html">‹ トップに戻る</a>
+  </div>
+
+  <div class="hero">
+    <div class="hero-label">Guide</div>
+    <h1>電波伝播・モニターの使い方</h1>
+    <p>スポラディックE層（Es）のしくみと<br>このモニターの読み方を解説します</p>
+  </div>
+
+  <!-- Esとは -->
+  <div class="card">
+    <div class="card-title">スポラディックE層（Es）とは</div>
+    <h2>突然現れる「電波の鏡」</h2>
+    <p>
+      通常、27MHz帯（CB）や50MHz帯（6m）の電波は電離層を突き抜けてしまい、遠距離通信には使えません。
+      しかし春から夏にかけて、高度約100kmの電離層に<strong>スポラディックE層（Es）</strong>と呼ばれる
+      高密度のプラズマ層が突発的に出現することがあります。
+    </p>
+    <p>
+      Es層は電波を反射する「鏡」のように働き、通常では届かない遠距離（1,000〜2,000km先）の局と
+      交信できる「DXチャンス」が生まれます。
+    </p>
+
+    <!-- イラスト：Es反射のしくみ -->
+    <div class="illust-wrap">
+      <svg width="480" height="220" viewBox="0 0 480 220" xmlns="http://www.w3.org/2000/svg" aria-label="Es層による電波反射のイラスト">
+        <!-- 空のグラデーション背景 -->
+        <defs>
+          <linearGradient id="skyGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#c8deff"/>
+            <stop offset="100%" stop-color="#edf1f7"/>
+          </linearGradient>
+          <linearGradient id="esGrad" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%" stop-color="#f0a500" stop-opacity="0"/>
+            <stop offset="25%" stop-color="#f0a500" stop-opacity="0.85"/>
+            <stop offset="75%" stop-color="#f0a500" stop-opacity="0.85"/>
+            <stop offset="100%" stop-color="#f0a500" stop-opacity="0"/>
+          </linearGradient>
+        </defs>
+        <rect width="480" height="220" fill="url(#skyGrad)" rx="10"/>
+
+        <!-- 地面 -->
+        <rect x="0" y="185" width="480" height="35" fill="#c8d8b0" rx="0"/>
+        <!-- 地面の模様 -->
+        <line x1="0" y1="190" x2="480" y2="190" stroke="#b0c090" stroke-width="1"/>
+
+        <!-- Es層（帯状） -->
+        <rect x="40" y="58" width="400" height="22" rx="8" fill="url(#esGrad)"/>
+        <text x="240" y="73" text-anchor="middle" font-size="11" font-weight="700" fill="#9a6200" font-family="-apple-system,sans-serif">Es層（高度 約100km）</text>
+
+        <!-- 電離層の境界ライン（薄く） -->
+        <line x1="40" y1="48" x2="440" y2="48" stroke="#3a7bd5" stroke-width="0.5" stroke-dasharray="4,4" opacity="0.4"/>
+        <text x="40" y="43" font-size="9" fill="#3a7bd5" opacity="0.7" font-family="-apple-system,sans-serif">電離層</text>
+
+        <!-- 左側：送信局 アンテナ -->
+        <line x1="72" y1="185" x2="72" y2="155" stroke="#1a3050" stroke-width="2.5"/>
+        <!-- アンテナエレメント -->
+        <line x1="72" y1="158" x2="58" y2="145" stroke="#1a3050" stroke-width="2"/>
+        <line x1="72" y1="158" x2="86" y2="145" stroke="#1a3050" stroke-width="2"/>
+        <line x1="72" y1="165" x2="60" y2="155" stroke="#1a3050" stroke-width="1.5"/>
+        <line x1="72" y1="165" x2="84" y2="155" stroke="#1a3050" stroke-width="1.5"/>
+        <!-- ラジアル（地面） -->
+        <line x1="55" y1="185" x2="89" y2="185" stroke="#1a3050" stroke-width="2"/>
+        <text x="72" y="200" text-anchor="middle" font-size="10" fill="#1a3050" font-family="-apple-system,sans-serif" font-weight="700">あなたの局</text>
+        <text x="72" y="212" text-anchor="middle" font-size="9" fill="#5a6a80" font-family="-apple-system,sans-serif">（関西）</text>
+
+        <!-- 右側：受信局 アンテナ -->
+        <line x1="408" y1="185" x2="408" y2="155" stroke="#e05050" stroke-width="2.5"/>
+        <line x1="408" y1="158" x2="394" y2="145" stroke="#e05050" stroke-width="2"/>
+        <line x1="408" y1="158" x2="422" y2="145" stroke="#e05050" stroke-width="2"/>
+        <line x1="408" y1="165" x2="396" y2="155" stroke="#e05050" stroke-width="1.5"/>
+        <line x1="408" y1="165" x2="420" y2="155" stroke="#e05050" stroke-width="1.5"/>
+        <line x1="391" y1="185" x2="425" y2="185" stroke="#e05050" stroke-width="2"/>
+        <text x="408" y="200" text-anchor="middle" font-size="10" fill="#e05050" font-family="-apple-system,sans-serif" font-weight="700">DX局</text>
+        <text x="408" y="212" text-anchor="middle" font-size="9" fill="#5a6a80" font-family="-apple-system,sans-serif">（九州・沖縄など）</text>
+
+        <!-- 電波の経路：上り -->
+        <line x1="82" y1="150" x2="200" y2="68" stroke="#3a7bd5" stroke-width="2" stroke-dasharray="6,3"/>
+        <!-- 電波の経路：下り -->
+        <line x1="200" y1="68" x2="398" y2="150" stroke="#3a7bd5" stroke-width="2" stroke-dasharray="6,3"/>
+
+        <!-- 反射点マーク -->
+        <circle cx="200" cy="68" r="5" fill="#f0a500" stroke="#fff" stroke-width="1.5"/>
+
+        <!-- 仰角ライン（地面水平 → 電波方向） -->
+        <line x1="82" y1="185" x2="150" y2="185" stroke="#3a7bd5" stroke-width="1" opacity="0.5"/>
+        <!-- 仰角弧 -->
+        <path d="M 110,185 A 28,28 0 0,0 95,162" stroke="#3a7bd5" stroke-width="1.2" fill="none"/>
+        <text x="115" y="178" font-size="9" fill="#3a7bd5" font-family="-apple-system,sans-serif">仰角</text>
+        <text x="113" y="188" font-size="9" fill="#3a7bd5" font-family="-apple-system,sans-serif">3〜8°</text>
+
+        <!-- ワンスパン矢印 -->
+        <line x1="82" y1="218" x2="398" y2="218" stroke="#1a3050" stroke-width="1.2"/>
+        <polygon points="82,215 75,218 82,221" fill="#1a3050"/>
+        <polygon points="398,215 405,218 398,221" fill="#1a3050"/>
+        <text x="240" y="215" text-anchor="middle" font-size="10" fill="#1a3050" font-family="-apple-system,sans-serif" font-weight="700">ワンスパン 約1,500km</text>
+      </svg>
+    </div>
+
+    <p>
+      電波はアンテナから<strong>低い仰角（3〜8度）</strong>で打ち上げられ、Es層で反射して
+      遠距離局に届きます。反射高度100kmの場合、ワンスパンの飛距離はおよそ
+      <strong>1,000〜2,000km</strong>になります。
+    </p>
+  </div>
+
+  <!-- なぜモニターが必要か -->
+  <div class="card">
+    <div class="card-title">なぜモニターが必要か</div>
+    <h2>Esは「突然」「短時間」しか続かない</h2>
+    <p>
+      スポラディックE層は、名前の通り<strong>突発的（Sporadic）</strong>に発生し、
+      数分〜数時間で消えてしまいます。しかも発生を事前に予測する方法はありません。
+    </p>
+    <p>
+      このモニターはNICTの観測データをリアルタイムで取得し、
+      <strong>Es層が出現しているかどうかを数値（FxEs）で確認</strong>できます。
+      FxEsが高いほど、より高い周波数の電波を反射できる強いEs層が出ています。
+    </p>
+  </div>
+
+  <!-- FxEsの読み方 -->
+  <div class="card">
+    <div class="card-title">FxEsの読み方</div>
+    <h2>FxEs（臨界周波数）とは</h2>
+    <p>
+      FxEsは「Es層が反射できる最高周波数（MHz）」を表す指標です。
+      この値が高いほど、Es層が濃く強い状態です。
+    </p>
+    <div class="fxes-scale">
+      <div class="fxes-row">
+        <div class="fxes-dot" style="background:#a0aab8"></div>
+        <div class="fxes-row-text"><strong>5MHz未満</strong>：Es層なし、またはごく弱い。CB・6mへの影響なし。</div>
+      </div>
+      <div class="fxes-row">
+        <div class="fxes-dot" style="background:#3a7bd5"></div>
+        <div class="fxes-row-text"><strong>5〜7MHz</strong>：弱いEs。HF帯への影響は出始めるが、CB・6mへの反射は困難。</div>
+      </div>
+      <div class="fxes-row">
+        <div class="fxes-dot" style="background:#f0a500"></div>
+        <div class="fxes-row-text"><strong>7〜9MHz</strong>：中程度のEs。CB（27MHz）DXの可能性が出てくるレベル。<strong>要注目</strong>。</div>
+      </div>
+      <div class="fxes-row">
+        <div class="fxes-dot" style="background:#e05050"></div>
+        <div class="fxes-row-text"><strong>9MHz以上</strong>：強いEs。CB・6mでの遠距離交信のチャンス大。</div>
+      </div>
+    </div>
+    <p style="margin-top:12px; font-size:0.78rem; color:#8090a8;">
+      ※ FxEs値はEs層の強度の目安です。実際に交信できるかは、電波の方向・距離・アンテナ性能にもよります。
+    </p>
+  </div>
+
+  <!-- モニター画面の使い方 -->
+  <div class="card">
+    <div class="card-title">モニター画面の使い方</div>
+    <h2>画面の見方 — ステップごとに解説</h2>
+    <ol class="step-list">
+      <li>
+        <div class="step-num">1</div>
+        <div><strong>FxEs（4観測点）を確認</strong><br>
+          沖縄・鹿児島・東京・北海道の4点でFxEsを表示します。
+          どこかの値が黄色〜赤になっていればEs発生中のサイン。</div>
+      </li>
+      <li>
+        <div class="step-num">2</div>
+        <div><strong>MUF（最高使用周波数）を確認</strong><br>
+          MUFはそのとき実際に通信できる最高の周波数です。
+          27MHz（CB）を超えていれば、CB DXの条件が整っています。</div>
+      </li>
+      <li>
+        <div class="step-num">3</div>
+        <div><strong>宇宙天気（X線・Kp・F10.7）を参考に</strong><br>
+          強い太陽フレア（X線上昇）や磁気嵐（Kp上昇）はEs発生に影響する場合があります。
+          異常値が出ていたら電波状況の悪化を疑ってください。</div>
+      </li>
+      <li>
+        <div class="step-num">4</div>
+        <div><strong>LINE通知で見逃しゼロ</strong><br>
+          鹿児島または東京でFxEsが上昇するとLINEで通知が届きます。
+          常にモニターを見ていなくても、チャンスを逃しません。</div>
+      </li>
+    </ol>
+  </div>
+
+  <!-- ワンスパン距離 -->
+  <div class="card">
+    <div class="card-title">参考：ワンスパン飛距離の計算</div>
+    <h2>どこまで電波が届く？</h2>
+    <p>
+      Es層の反射高度（h）と電波の仰角（θ）によって、ワンスパンの飛距離（D）が決まります。
+      日本付近のEs層は高度<strong>90〜110km</strong>程度が多く、
+      仰角が低いほど飛距離が伸びます。
+    </p>
+    <div class="formula-box">
+      <div>反射高度 h ＝ 100km、仰角 θ ＝ 5° の場合：</div>
+      <div class="formula">D ≈ 2 × h ÷ tan(θ) ≈ 約2,290km</div>
+      <div style="margin-top:4px">反射高度 100km、仰角 3° → 約3,800km</div>
+      <div>反射高度 100km、仰角 8° → 約1,420km</div>
+    </div>
+    <p style="margin-top:10px">
+      実際には地球の曲率や電離層の不均一性があるため、
+      目安として<strong>1,000〜2,000km</strong>程度が一般的なワンスパンと言われています。
+      関西からであれば沖縄・九州・東北・北海道、さらには韓国・中国方面が射程圏内です。
+    </p>
+  </div>
+
+  <!-- CTA -->
+  <div class="card" style="padding:16px">
+    <a class="cta-btn" href="monitor.html">📡 モニターを開く</a>
+  </div>
+
+  <footer>© 2026 JQ3JQO / KyotoDR120 — Unofficial personal tool</footer>
+
+</body>
+</html>
