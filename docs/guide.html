@@ -177,6 +177,104 @@
       margin: 4px 0;
     }
 
+    /* Es反射点シミュレーター */
+    .calc-row {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 12px;
+      flex-wrap: wrap;
+    }
+    .calc-group {
+      flex: 1;
+      min-width: 130px;
+    }
+    .calc-label {
+      font-size: 0.68rem;
+      font-weight: 700;
+      color: #8090a8;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-bottom: 4px;
+    }
+    .calc-select {
+      width: 100%;
+      padding: 9px 10px;
+      border-radius: 8px;
+      border: 1.5px solid #d4dce8;
+      background: #f8fafc;
+      font-family: inherit;
+      font-size: 0.85rem;
+      color: #1a2838;
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%238090a8' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 10px center;
+    }
+    .calc-btn {
+      width: 100%;
+      padding: 12px;
+      border-radius: 8px;
+      border: none;
+      background: #3a7bd5;
+      color: #fff;
+      font-family: inherit;
+      font-size: 0.9rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: filter 0.15s;
+      margin-bottom: 14px;
+    }
+    .calc-btn:active { filter: brightness(0.88); }
+    .calc-result {
+      display: none;
+    }
+    .calc-result.visible { display: block; }
+    .calc-metrics {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 12px;
+      flex-wrap: wrap;
+    }
+    .calc-metric {
+      flex: 1;
+      min-width: 100px;
+      background: #f3f6fb;
+      border-radius: 8px;
+      padding: 10px 12px;
+      text-align: center;
+    }
+    .calc-metric-val {
+      font-size: 1.3rem;
+      font-weight: 800;
+      color: #1a3050;
+      line-height: 1;
+      margin-bottom: 3px;
+    }
+    .calc-metric-label {
+      font-size: 0.65rem;
+      color: #8090a8;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+    }
+    .calc-midpoint {
+      background: #eef4ff;
+      border-radius: 8px;
+      padding: 10px 12px;
+      font-size: 0.82rem;
+      color: #3a4a60;
+      line-height: 1.6;
+      margin-bottom: 12px;
+    }
+    .calc-midpoint strong { color: #1a3050; }
+    /* 簡易マップ */
+    .calc-map {
+      width: 100%;
+      border-radius: 8px;
+      overflow: hidden;
+      background: #d6e8f8;
+    }
+    .calc-map svg { display: block; width: 100%; }
+
     /* CTAボタン */
     .cta-btn {
       display: flex;
@@ -312,6 +410,12 @@
       遠距離局に届きます。反射高度100kmの場合、ワンスパンの飛距離はおよそ
       <strong>1,000〜2,000km</strong>になります。
     </p>
+    <p>
+      日本の市民ラジオ機は型式認定品のため、アンテナは付属の<strong>λ/4ロッドアンテナ固定</strong>です。
+      λ/4垂直アンテナは実地面上で最大輻射角が<strong>2〜10°</strong>程度となり、
+      Es反射に必要な低仰角（3〜8°）と一致しています。
+      つまり市民ラジオの付属ロッドアンテナは、<strong>Es DXに適した照射角特性</strong>を持っています。
+    </p>
   </div>
 
   <!-- なぜモニターが必要か -->
@@ -414,6 +518,46 @@
     </p>
   </div>
 
+  <!-- Es反射点シミュレーター -->
+  <div class="card">
+    <div class="card-title">Es反射点シミュレーター</div>
+    <h2>どこでEsが出ると届く？</h2>
+    <p>自局とターゲット局を選ぶと、Es反射点の位置・距離・仰角を計算します。</p>
+
+    <div class="calc-row" style="margin-top:14px">
+      <div class="calc-group">
+        <div class="calc-label">自局（都道府県）</div>
+        <select class="calc-select" id="calc-from"></select>
+      </div>
+      <div class="calc-group">
+        <div class="calc-label">ターゲット局</div>
+        <select class="calc-select" id="calc-to"></select>
+      </div>
+    </div>
+    <button class="calc-btn" onclick="calcEs()">計算する</button>
+
+    <div class="calc-result" id="calc-result">
+      <div class="calc-metrics">
+        <div class="calc-metric">
+          <div class="calc-metric-val" id="res-dist">—</div>
+          <div class="calc-metric-label">距離 (km)</div>
+        </div>
+        <div class="calc-metric">
+          <div class="calc-metric-val" id="res-angle">—</div>
+          <div class="calc-metric-label">仰角 (°)</div>
+        </div>
+        <div class="calc-metric">
+          <div class="calc-metric-val" id="res-height">100</div>
+          <div class="calc-metric-label">反射高度 (km)</div>
+        </div>
+      </div>
+      <div class="calc-midpoint" id="res-midpoint"></div>
+      <div class="calc-map">
+        <svg id="calc-svg" viewBox="0 0 300 280" xmlns="http://www.w3.org/2000/svg"></svg>
+      </div>
+    </div>
+  </div>
+
   <!-- CTA -->
   <div class="card" style="padding:16px">
     <a class="cta-btn" href="monitor.html">📡 モニターを開く</a>
@@ -421,5 +565,137 @@
 
   <footer>© 2026 JQ3JQO / KyotoDR120 — Unofficial personal tool</footer>
 
+<script>
+// 都道府県 緯度・経度データ（県庁所在地付近）
+const PREFS = [
+  {n:'北海道', lat:43.06, lon:141.35}, {n:'青森', lat:40.82, lon:140.74},
+  {n:'岩手',  lat:39.70, lon:141.15}, {n:'宮城', lat:38.27, lon:140.87},
+  {n:'秋田',  lat:39.72, lon:140.10}, {n:'山形', lat:38.24, lon:140.36},
+  {n:'福島',  lat:37.75, lon:140.47}, {n:'茨城', lat:36.34, lon:140.45},
+  {n:'栃木',  lat:36.57, lon:139.88}, {n:'群馬', lat:36.39, lon:139.06},
+  {n:'埼玉',  lat:35.86, lon:139.65}, {n:'千葉', lat:35.61, lon:140.12},
+  {n:'東京',  lat:35.69, lon:139.69}, {n:'神奈川',lat:35.45, lon:139.64},
+  {n:'新潟',  lat:37.90, lon:139.02}, {n:'富山', lat:36.70, lon:137.21},
+  {n:'石川',  lat:36.59, lon:136.63}, {n:'福井', lat:36.07, lon:136.22},
+  {n:'山梨',  lat:35.66, lon:138.57}, {n:'長野', lat:36.65, lon:138.19},
+  {n:'岐阜',  lat:35.42, lon:136.76}, {n:'静岡', lat:34.98, lon:138.38},
+  {n:'愛知',  lat:35.18, lon:136.91}, {n:'三重', lat:34.73, lon:136.51},
+  {n:'滋賀',  lat:35.00, lon:135.87}, {n:'京都', lat:35.02, lon:135.76},
+  {n:'大阪',  lat:34.69, lon:135.50}, {n:'兵庫', lat:34.69, lon:135.18},
+  {n:'奈良',  lat:34.69, lon:135.83}, {n:'和歌山',lat:34.23, lon:135.17},
+  {n:'鳥取',  lat:35.50, lon:134.24}, {n:'島根', lat:35.47, lon:133.05},
+  {n:'岡山',  lat:34.66, lon:133.93}, {n:'広島', lat:34.39, lon:132.45},
+  {n:'山口',  lat:34.19, lon:131.47}, {n:'徳島', lat:34.07, lon:134.55},
+  {n:'香川',  lat:34.34, lon:134.05}, {n:'愛媛', lat:33.84, lon:132.77},
+  {n:'高知',  lat:33.56, lon:133.53}, {n:'福岡', lat:33.61, lon:130.42},
+  {n:'佐賀',  lat:33.25, lon:130.30}, {n:'長崎', lat:32.74, lon:129.87},
+  {n:'熊本',  lat:32.79, lon:130.74}, {n:'大分', lat:33.24, lon:131.61},
+  {n:'宮崎',  lat:31.91, lon:131.42}, {n:'鹿児島',lat:31.56, lon:130.56},
+  {n:'沖縄',  lat:26.21, lon:127.68},
+];
+
+// ビューポート (lon 122-148, lat 24-47) → SVG座標 300×280
+const LON0=122, LON1=148, LAT0=47, LAT1=24;
+function toSVG(lat, lon) {
+  const x = (lon - LON0) / (LON1 - LON0) * 300;
+  const y = (LAT0 - lat) / (LAT0 - LAT1) * 280;
+  return [x, y];
+}
+
+// Haversine距離(km)
+function haversine(lat1,lon1,lat2,lon2) {
+  const R=6371, r=Math.PI/180;
+  const dLat=(lat2-lat1)*r, dLon=(lon2-lon1)*r;
+  const a=Math.sin(dLat/2)**2+Math.cos(lat1*r)*Math.cos(lat2*r)*Math.sin(dLon/2)**2;
+  return 2*R*Math.asin(Math.sqrt(a));
+}
+
+// 最近傍都道府県名
+function nearestPref(lat, lon) {
+  let best=null, bestD=1e9;
+  for (const p of PREFS) {
+    const d=haversine(lat,lon,p.lat,p.lon);
+    if (d<bestD){bestD=d;best=p;}
+  }
+  return best.n;
+}
+
+// セレクト初期化
+(function(){
+  const from=document.getElementById('calc-from');
+  const to=document.getElementById('calc-to');
+  PREFS.forEach((p,i)=>{
+    from.innerHTML+=`<option value="${i}">${p.n}</option>`;
+    to.innerHTML+=`<option value="${i}">${p.n}</option>`;
+  });
+  // デフォルト: 自局=京都(25), ターゲット=沖縄(46)
+  from.value='25';
+  to.value='46';
+})();
+
+function calcEs() {
+  const fi = parseInt(document.getElementById('calc-from').value);
+  const ti = parseInt(document.getElementById('calc-to').value);
+  const f = PREFS[fi], t = PREFS[ti];
+  if (fi === ti) { alert('自局とターゲットが同じです'); return; }
+
+  const dist = Math.round(haversine(f.lat, f.lon, t.lat, t.lon));
+  const midLat = (f.lat + t.lat) / 2;
+  const midLon = (f.lon + t.lon) / 2;
+  const h = 100; // km
+  const angleRad = Math.atan(h / (dist / 2));
+  const angleDeg = (angleRad * 180 / Math.PI).toFixed(1);
+  const midPref = nearestPref(midLat, midLon);
+
+  document.getElementById('res-dist').textContent = dist.toLocaleString();
+  document.getElementById('res-angle').textContent = angleDeg + '°';
+
+  // 仰角で色付け
+  const a = parseFloat(angleDeg);
+  const angleEl = document.getElementById('res-angle');
+  angleEl.style.color = a <= 5 ? '#3a7bd5' : a <= 10 ? '#f0a500' : '#e05050';
+
+  document.getElementById('res-midpoint').innerHTML =
+    `<strong>Es反射点の目安：${midPref}付近</strong>（緯度 ${midLat.toFixed(1)}°N / 経度 ${midLon.toFixed(1)}°E）<br>` +
+    `この付近でEs層が発生していると、${f.n}↔${t.n}間での交信チャンスがあります。`;
+
+  // SVG描画
+  const svg = document.getElementById('calc-svg');
+  const [fx,fy] = toSVG(f.lat, f.lon);
+  const [tx,ty] = toSVG(t.lat, t.lon);
+  const [mx,my] = toSVG(midLat, midLon);
+  svg.innerHTML = `
+    <rect width="300" height="280" fill="#d6e8f8"/>
+    <!-- 海 -->
+    <text x="20" y="260" font-size="9" fill="#88aacc" font-family="sans-serif">lon 122E</text>
+    <text x="248" y="260" font-size="9" fill="#88aacc" font-family="sans-serif">148E</text>
+    <text x="2" y="15" font-size="9" fill="#88aacc" font-family="sans-serif">47N</text>
+    <text x="2" y="275" font-size="9" fill="#88aacc" font-family="sans-serif">24N</text>
+    <!-- グリッド線 -->
+    ${[125,130,135,140,145].map(lo=>{const gx=(lo-LON0)/(LON1-LON0)*300;return `<line x1="${gx}" y1="0" x2="${gx}" y2="280" stroke="#b8d0e8" stroke-width="0.5"/>`;}).join('')}
+    ${[30,35,40,45].map(la=>{const gy=(LAT0-la)/(LAT0-LAT1)*280;return `<line x1="0" y1="${gy}" x2="300" y2="${gy}" stroke="#b8d0e8" stroke-width="0.5"/>`;}).join('')}
+    <!-- 電波経路 -->
+    <line x1="${fx}" y1="${fy}" x2="${tx}" y2="${ty}" stroke="#3a7bd5" stroke-width="2" stroke-dasharray="6,3"/>
+    <!-- 反射点 -->
+    <circle cx="${mx}" cy="${my}" r="9" fill="#f0a500" opacity="0.25"/>
+    <circle cx="${mx}" cy="${my}" r="5" fill="#f0a500" stroke="#fff" stroke-width="1.5"/>
+    <!-- 自局 -->
+    <circle cx="${fx}" cy="${fy}" r="6" fill="#1a3050" stroke="#fff" stroke-width="1.5"/>
+    <text x="${fx}" y="${fy-9}" text-anchor="middle" font-size="10" font-weight="700" fill="#1a3050" font-family="sans-serif">${f.n}</text>
+    <!-- ターゲット -->
+    <circle cx="${tx}" cy="${ty}" r="6" fill="#e05050" stroke="#fff" stroke-width="1.5"/>
+    <text x="${tx}" y="${ty-9}" text-anchor="middle" font-size="10" font-weight="700" fill="#e05050" font-family="sans-serif">${t.n}</text>
+    <!-- 反射点ラベル -->
+    <text x="${mx}" y="${my+18}" text-anchor="middle" font-size="9" fill="#9a6200" font-weight="700" font-family="sans-serif">Es反射点</text>
+    <!-- 凡例 -->
+    <rect x="6" y="6" width="100" height="42" rx="4" fill="rgba(255,255,255,0.8)"/>
+    <circle cx="16" cy="17" r="4" fill="#1a3050"/><text x="24" y="21" font-size="9" fill="#1a3050" font-family="sans-serif">自局</text>
+    <circle cx="16" cy="31" r="4" fill="#e05050"/><text x="24" y="35" font-size="9" fill="#e05050" font-family="sans-serif">ターゲット</text>
+    <circle cx="16" cy="44" r="4" fill="#f0a500"/><text x="24" y="48" font-size="9" fill="#9a6200" font-family="sans-serif">Es反射点</text>
+  `;
+
+  document.getElementById('calc-result').classList.add('visible');
+}
+</script>
 </body>
 </html>
