@@ -566,7 +566,7 @@
       <div class="calc-midpoint" id="res-midpoint"></div>
       <div class="skip-warn" id="res-warning"></div>
       <div class="calc-map">
-        <svg id="calc-svg" viewBox="0 0 300 280" xmlns="http://www.w3.org/2000/svg"></svg>
+        <svg id="calc-svg" viewBox="0 0 300 110" xmlns="http://www.w3.org/2000/svg"></svg>
       </div>
     </div>
   </div>
@@ -647,16 +647,6 @@ function nearestPref(lat, lon) {
   to.value='46';
 })();
 
-// スキップゾーン半径 (km) → SVGの楕円半径(px)
-// pxPerDegLat = 280/23, pxPerDegLon = 300/26
-function skipEllipse(fromLat, km) {
-  const pxLat = 280 / 23;
-  const pxLon = 300 / 26;
-  const ry = (km / 111) * pxLat;
-  const rx = (km / (111 * Math.cos(fromLat * Math.PI / 180))) * pxLon;
-  return { rx, ry };
-}
-
 function calcEs() {
   const fi = parseInt(document.getElementById('calc-from').value);
   const ti = parseInt(document.getElementById('calc-to').value);
@@ -713,52 +703,58 @@ function calcEs() {
   warnEl.className = `skip-warn ${skipLevel}`;
   warnEl.innerHTML = warnHtml;
 
-  // SVG描画
+  // SVG描画（横並び距離スケール）
   const svg = document.getElementById('calc-svg');
-  const [fx,fy] = toSVG(f.lat, f.lon);
-  const [tx,ty] = toSVG(t.lat, t.lon);
-  const [mx,my] = toSVG(midLat, midLon);
-
-  // スキップゾーン楕円のpx半径
-  const hard = skipEllipse(f.lat, SKIP_HARD);
-  const soft = skipEllipse(f.lat, SKIP_SOFT);
-
-  // ターゲットがスキップゾーン内かどうかで経路色を変える
   const pathColor = skipLevel === 'danger' ? '#e05050' : skipLevel === 'caution' ? '#f0a500' : '#3a7bd5';
 
+  // レイアウト定数
+  const X0 = 30, X1 = 270, W = X1 - X0; // 有効幅 240px
+  const Y = 52; // 中心Y
+
+  // スキップゾーンのpx幅（distに対するSKIP_HARD/SOFTの割合）
+  const hardPx = Math.min((SKIP_HARD / dist) * W, W);
+  const softPx = Math.min((SKIP_SOFT / dist) * W, W);
+  const midPx  = X0 + W / 2;
+
   svg.innerHTML = `
-    <rect width="300" height="280" fill="#d6e8f8"/>
-    <text x="20" y="260" font-size="9" fill="#88aacc" font-family="sans-serif">lon 122E</text>
-    <text x="248" y="260" font-size="9" fill="#88aacc" font-family="sans-serif">148E</text>
-    <text x="2" y="15" font-size="9" fill="#88aacc" font-family="sans-serif">47N</text>
-    <text x="2" y="275" font-size="9" fill="#88aacc" font-family="sans-serif">24N</text>
-    <!-- グリッド線 -->
-    ${[125,130,135,140,145].map(lo=>{const gx=(lo-LON0)/(LON1-LON0)*300;return `<line x1="${gx}" y1="0" x2="${gx}" y2="280" stroke="#b8d0e8" stroke-width="0.5"/>`;}).join('')}
-    ${[30,35,40,45].map(la=>{const gy=(LAT0-la)/(LAT0-LAT1)*280;return `<line x1="0" y1="${gy}" x2="300" y2="${gy}" stroke="#b8d0e8" stroke-width="0.5"/>`;}).join('')}
-    <!-- スキップゾーン（困難エリア: 外側） -->
-    <ellipse cx="${fx}" cy="${fy}" rx="${soft.rx}" ry="${soft.ry}" fill="#f0a500" opacity="0.12" stroke="#f0a500" stroke-width="1" stroke-dasharray="4,3"/>
-    <!-- スキップゾーン（完全: 内側） -->
-    <ellipse cx="${fx}" cy="${fy}" rx="${hard.rx}" ry="${hard.ry}" fill="#e05050" opacity="0.15" stroke="#e05050" stroke-width="1" stroke-dasharray="3,2"/>
-    <!-- 電波経路 -->
-    <line x1="${fx}" y1="${fy}" x2="${tx}" y2="${ty}" stroke="${pathColor}" stroke-width="2" stroke-dasharray="6,3"/>
-    <!-- 反射点 -->
-    <circle cx="${mx}" cy="${my}" r="9" fill="#f0a500" opacity="0.25"/>
-    <circle cx="${mx}" cy="${my}" r="5" fill="#f0a500" stroke="#fff" stroke-width="1.5"/>
+    <rect width="300" height="110" fill="#f3f6fb" rx="8"/>
+
+    <!-- 完全スキップゾーン（赤） -->
+    <rect x="${X0}" y="${Y-10}" width="${hardPx}" height="20" fill="#e05050" opacity="0.18" rx="3"/>
+    <!-- 困難帯（オレンジ） -->
+    ${softPx > hardPx ? `<rect x="${X0+hardPx}" y="${Y-10}" width="${softPx-hardPx}" height="20" fill="#f0a500" opacity="0.18"/>` : ''}
+    <!-- 有効帯（青） -->
+    ${softPx < W ? `<rect x="${X0+softPx}" y="${Y-10}" width="${W-softPx}" height="20" fill="#3a7bd5" opacity="0.10"/>` : ''}
+
+    <!-- 距離ライン -->
+    <line x1="${X0}" y1="${Y}" x2="${X1}" y2="${Y}" stroke="#c0ccd8" stroke-width="1.5"/>
+
+    <!-- 反射点マーカー -->
+    <line x1="${midPx}" y1="${Y-16}" x2="${midPx}" y2="${Y-4}" stroke="#f0a500" stroke-width="1.5"/>
+    <polygon points="${midPx},${Y-3} ${midPx-4},${Y-12} ${midPx+4},${Y-12}" fill="#f0a500"/>
+    <text x="${midPx}" y="${Y-19}" text-anchor="middle" font-size="8" fill="#9a6200" font-weight="700" font-family="sans-serif">Es反射点</text>
+
     <!-- 自局 -->
-    <circle cx="${fx}" cy="${fy}" r="6" fill="#1a3050" stroke="#fff" stroke-width="1.5"/>
-    <text x="${fx}" y="${fy-9}" text-anchor="middle" font-size="10" font-weight="700" fill="#1a3050" font-family="sans-serif">${f.n}</text>
+    <circle cx="${X0}" cy="${Y}" r="7" fill="#1a3050" stroke="#fff" stroke-width="1.5"/>
+    <text x="${X0}" y="${Y+18}" text-anchor="middle" font-size="9" font-weight="700" fill="#1a3050" font-family="sans-serif">${f.n}</text>
+
     <!-- ターゲット -->
-    <circle cx="${tx}" cy="${ty}" r="6" fill="${pathColor}" stroke="#fff" stroke-width="1.5"/>
-    <text x="${tx}" y="${ty-9}" text-anchor="middle" font-size="10" font-weight="700" fill="${pathColor}" font-family="sans-serif">${t.n}</text>
-    <!-- 反射点ラベル -->
-    ${skipLevel === 'ok' ? `<text x="${mx}" y="${my+18}" text-anchor="middle" font-size="9" fill="#9a6200" font-weight="700" font-family="sans-serif">Es反射点</text>` : ''}
-    <!-- 凡例 -->
-    <rect x="6" y="6" width="128" height="62" rx="4" fill="rgba(255,255,255,0.88)"/>
-    <circle cx="16" cy="17" r="4" fill="#1a3050"/><text x="24" y="21" font-size="9" fill="#1a3050" font-family="sans-serif">自局</text>
-    <circle cx="16" cy="31" r="4" fill="#e05050"/><text x="24" y="35" font-size="9" fill="#e05050" font-family="sans-serif">ターゲット</text>
-    <rect cx="12" cy="40" width="8" height="6" fill="#e05050" opacity="0.3"/>
-    <ellipse cx="16" cy="44" rx="5" ry="4" fill="#e05050" opacity="0.25"/><text x="24" y="48" font-size="9" fill="#c03030" font-family="sans-serif">完全スキップ帯</text>
-    <ellipse cx="16" cy="57" rx="5" ry="4" fill="#f0a500" opacity="0.2"/><text x="24" y="61" font-size="9" fill="#9a6200" font-family="sans-serif">困難帯（傾け有効）</text>
+    <circle cx="${X1}" cy="${Y}" r="7" fill="${pathColor}" stroke="#fff" stroke-width="1.5"/>
+    <text x="${X1}" y="${Y+18}" text-anchor="middle" font-size="9" font-weight="700" fill="${pathColor}" font-family="sans-serif">${t.n}</text>
+
+    <!-- ゾーンラベル（下段） -->
+    <text x="${X0 + hardPx/2}" y="${Y+32}" text-anchor="middle" font-size="7.5" fill="#c03030" font-family="sans-serif">完全スキップ</text>
+    ${softPx > hardPx ? `<text x="${X0+(hardPx+softPx)/2}" y="${Y+32}" text-anchor="middle" font-size="7.5" fill="#9a6200" font-family="sans-serif">困難帯</text>` : ''}
+    ${softPx < W ? `<text x="${X0+(softPx+W)/2}" y="${Y+32}" text-anchor="middle" font-size="7.5" fill="#2a5aaa" font-family="sans-serif">Es DX有効</text>` : ''}
+
+    <!-- 距離スケールの目盛り（SKIP_HARD / SKIP_SOFTの位置） -->
+    ${hardPx < W ? `<line x1="${X0+hardPx}" y1="${Y-10}" x2="${X0+hardPx}" y2="${Y+10}" stroke="#e05050" stroke-width="1" stroke-dasharray="2,2"/>
+    <text x="${X0+hardPx}" y="${Y+42}" text-anchor="middle" font-size="7" fill="#c03030" font-family="sans-serif">${SKIP_HARD}km</text>` : ''}
+    ${softPx < W ? `<line x1="${X0+softPx}" y1="${Y-10}" x2="${X0+softPx}" y2="${Y+10}" stroke="#f0a500" stroke-width="1" stroke-dasharray="2,2"/>
+    <text x="${X0+softPx}" y="${Y+42}" text-anchor="middle" font-size="7" fill="#9a6200" font-family="sans-serif">${SKIP_SOFT}km</text>` : ''}
+
+    <!-- 総距離ラベル -->
+    <text x="150" y="105" text-anchor="middle" font-size="8" fill="#8090a8" font-family="sans-serif">総距離 ${dist.toLocaleString()} km</text>
   `;
 
   document.getElementById('calc-result').classList.add('visible');
