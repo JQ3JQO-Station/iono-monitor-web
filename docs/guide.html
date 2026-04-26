@@ -533,86 +533,71 @@
   <!-- MUFのしくみ -->
   <div class="card">
     <div class="card-title">MUF（最高使用周波数）のしくみ</div>
-    <h2>FxEsが低くてもCBが届く理由</h2>
+    <h2>MUFはF2層伝搬の指標 — Esとは別物</h2>
     <p>
-      FxEsは「真上に向けて計測した」臨界周波数です。しかし電波は斜めに入射するため、
-      実際に使える最高周波数（<strong>パスMUF</strong>）はFxEsよりずっと高くなります。
+      モニターに表示する<strong>MUF（最高使用周波数）はF2層伝搬</strong>の指標です。
+      Esとは発生原理も高度も異なります。混同しないよう注意が必要です。
     </p>
 
-    <!-- イラスト：垂直vs斜入射 -->
+    <!-- イラスト：Es層 vs F2層の比較 -->
     <div class="illust-wrap" style="margin:14px 0 8px">
-      <svg width="420" height="160" viewBox="0 0 420 160" xmlns="http://www.w3.org/2000/svg" aria-label="垂直入射と斜入射のMUF比較">
+      <svg width="420" height="200" viewBox="0 0 420 200" xmlns="http://www.w3.org/2000/svg" aria-label="Es層とF2層の高度比較イラスト">
         <defs>
           <linearGradient id="skyG2" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stop-color="#c8deff"/>
+            <stop offset="0%" stop-color="#9bbfee"/>
+            <stop offset="60%" stop-color="#c8deff"/>
             <stop offset="100%" stop-color="#edf1f7"/>
           </linearGradient>
         </defs>
-        <rect width="420" height="160" fill="url(#skyG2)" rx="8"/>
+        <rect width="420" height="200" fill="url(#skyG2)" rx="8"/>
         <!-- 地面 -->
-        <rect x="0" y="135" width="420" height="25" fill="#c8d8b0"/>
-        <!-- Es層 -->
-        <rect x="20" y="42" width="380" height="16" rx="6" fill="#f0a500" opacity="0.7"/>
-        <text x="210" y="53" text-anchor="middle" font-size="10" font-weight="700" fill="#7a4800" font-family="sans-serif">Es層（高度 100km）</text>
+        <rect x="0" y="175" width="420" height="25" fill="#c8d8b0"/>
+        <line x1="0" y1="175" x2="420" y2="175" stroke="#b0c090" stroke-width="1"/>
 
-        <!-- 垂直入射 -->
-        <line x1="90" y1="58" x2="90" y2="132" stroke="#3a7bd5" stroke-width="2" stroke-dasharray="5,3"/>
-        <polygon points="90,58 86,70 94,70" fill="#3a7bd5"/>
-        <text x="90" y="148" text-anchor="middle" font-size="9" font-weight="700" fill="#3a7bd5" font-family="sans-serif">FxEs測定局</text>
-        <text x="90" y="158" text-anchor="middle" font-size="8" fill="#3a7bd5" font-family="sans-serif">（垂直入射）</text>
-        <text x="90" y="30" text-anchor="middle" font-size="8" fill="#3a7bd5" font-family="sans-serif">FxEs = 5MHz</text>
+        <!-- F2層（高い位置） -->
+        <rect x="20" y="22" width="380" height="14" rx="5" fill="#3a7bd5" opacity="0.55"/>
+        <text x="210" y="32" text-anchor="middle" font-size="10" font-weight="700" fill="#fff" font-family="sans-serif">F2層（高度 約250〜400km）← MUFの反射層</text>
 
-        <!-- 斜入射の電波 -->
-        <line x1="155" y1="132" x2="240" y2="50" stroke="#e05050" stroke-width="2"/>
-        <line x1="240" y1="50" x2="325" y2="132" stroke="#e05050" stroke-width="2"/>
-        <polygon points="240,50 230,62 238,57" fill="#e05050"/>
-        <text x="155" y="148" text-anchor="middle" font-size="9" font-weight="700" fill="#1a3050" font-family="sans-serif">送信局</text>
-        <text x="325" y="148" text-anchor="middle" font-size="9" font-weight="700" fill="#e05050" font-family="sans-serif">受信局</text>
-        <!-- MUF表示 -->
-        <rect x="260" y="22" width="130" height="28" rx="5" fill="rgba(255,255,255,0.85)"/>
-        <text x="325" y="34" text-anchor="middle" font-size="9" font-weight="700" fill="#e05050" font-family="sans-serif">パスMUF ≈ 37MHz</text>
-        <text x="325" y="46" text-anchor="middle" font-size="8" fill="#8090a8" font-family="sans-serif">（斜入射・距離1,500km）</text>
-        <!-- 矢印 -->
-        <line x1="248" y1="35" x2="263" y2="35" stroke="#e05050" stroke-width="1" marker-end="url(#arr)"/>
+        <!-- Es層（低い位置） -->
+        <rect x="20" y="90" width="380" height="14" rx="5" fill="#f0a500" opacity="0.75"/>
+        <text x="210" y="100" text-anchor="middle" font-size="10" font-weight="700" fill="#7a4800" font-family="sans-serif">Es層（高度 約100km）← FxEsの反射層</text>
 
-        <!-- ワンスパン距離 -->
-        <line x1="155" y1="155" x2="325" y2="155" stroke="#1a3050" stroke-width="1"/>
-        <polygon points="155,152 148,155 155,158" fill="#1a3050"/>
-        <polygon points="325,152 332,155 325,158" fill="#1a3050"/>
-        <text x="240" y="153" text-anchor="middle" font-size="9" fill="#1a3050" font-weight="700" font-family="sans-serif">ワンスパン 1,500km</text>
+        <!-- 高度矢印（左端） -->
+        <line x1="14" y1="29" x2="14" y2="97" stroke="#5a6a80" stroke-width="1" stroke-dasharray="3,2"/>
+        <text x="4" y="65" font-size="8" fill="#5a6a80" font-family="sans-serif" transform="rotate(-90,4,65)">約3倍の高さ</text>
+
+        <!-- F2電波経路（広い弧） -->
+        <path d="M 55,172 Q 210,30 365,172" stroke="#3a7bd5" stroke-width="2" stroke-dasharray="6,3" fill="none"/>
+        <text x="210" y="148" text-anchor="middle" font-size="9" fill="#3a7bd5" font-weight="700" font-family="sans-serif">F2伝搬　ワンスパン 約2,000〜4,000km</text>
+
+        <!-- Es電波経路（狭い弧） -->
+        <path d="M 130,172 Q 210,98 290,172" stroke="#f0a500" stroke-width="2" stroke-dasharray="6,3" fill="none"/>
+        <text x="210" y="166" text-anchor="middle" font-size="9" fill="#9a6200" font-weight="700" font-family="sans-serif">Es伝搬 約1,000〜2,000km</text>
       </svg>
     </div>
 
-    <p>
-      FxEsが5MHzでも、1,500km離れた斜入射では<strong>パスMUF ≈ 37MHz</strong>になります。
-      つまりCB（27MHz）の交信に<strong>FxEsは5MHz程度あれば十分</strong>なケースがあります。
-    </p>
-
-    <div class="formula-box" style="margin-top:10px">
-      <div style="margin-bottom:6px"><strong>パスMUF の計算式（平面近似）</strong></div>
-      <div class="formula">パスMUF = FxEs × √( 1 + (D ÷ 2h)² )</div>
-      <div style="margin-top:8px; font-size:0.8rem; color:#5a6a80">D＝距離(km)、h＝反射高度(km、通常100km)</div>
-    </div>
-
-    <div style="overflow-x:auto; margin-top:12px">
+    <div style="overflow-x:auto; margin-top:4px">
       <table style="width:100%; border-collapse:collapse; font-size:0.8rem">
         <thead>
           <tr style="background:#f3f6fb">
-            <th style="padding:7px 8px; text-align:left; color:#5a6a80; font-weight:700; border-bottom:2px solid #edf1f7">ワンスパン距離</th>
-            <th style="padding:7px 8px; text-align:center; color:#5a6a80; font-weight:700; border-bottom:2px solid #edf1f7">CB(27MHz)に必要なFxEs</th>
-            <th style="padding:7px 8px; text-align:center; color:#5a6a80; font-weight:700; border-bottom:2px solid #edf1f7">パスMUF (FxEs=5MHzの場合)</th>
+            <th style="padding:7px 8px; text-align:left; color:#5a6a80; font-weight:700; border-bottom:2px solid #edf1f7"></th>
+            <th style="padding:7px 8px; text-align:center; color:#f0a500; font-weight:700; border-bottom:2px solid #edf1f7">Es層（FxEs）</th>
+            <th style="padding:7px 8px; text-align:center; color:#3a7bd5; font-weight:700; border-bottom:2px solid #edf1f7">F2層（MUF）</th>
           </tr>
         </thead>
         <tbody>
-          <tr><td style="padding:6px 8px; border-bottom:1px solid #edf1f7; color:#3a4a60">500km</td><td style="padding:6px 8px; border-bottom:1px solid #edf1f7; text-align:center; color:#e05050; font-weight:700">約10MHz以上</td><td style="padding:6px 8px; border-bottom:1px solid #edf1f7; text-align:center; color:#3a4a60">約13MHz</td></tr>
-          <tr style="background:#fafcff"><td style="padding:6px 8px; border-bottom:1px solid #edf1f7; color:#3a4a60">1,000km</td><td style="padding:6px 8px; border-bottom:1px solid #edf1f7; text-align:center; color:#f0a500; font-weight:700">約5.3MHz以上</td><td style="padding:6px 8px; border-bottom:1px solid #edf1f7; text-align:center; color:#3a4a60">約25.5MHz</td></tr>
-          <tr><td style="padding:6px 8px; border-bottom:1px solid #edf1f7; color:#3a4a60">1,500km</td><td style="padding:6px 8px; border-bottom:1px solid #edf1f7; text-align:center; color:#2ecc71; font-weight:700">約3.6MHz以上</td><td style="padding:6px 8px; border-bottom:1px solid #edf1f7; text-align:center; color:#3a4a60">約37.8MHz ✓</td></tr>
-          <tr style="background:#fafcff"><td style="padding:6px 8px; color:#3a4a60">2,000km</td><td style="padding:6px 8px; text-align:center; color:#2ecc71; font-weight:700">約2.7MHz以上</td><td style="padding:6px 8px; text-align:center; color:#3a4a60">約50.2MHz ✓</td></tr>
+          <tr><td style="padding:6px 8px; border-bottom:1px solid #edf1f7; color:#5a6a80; font-weight:700">反射高度</td><td style="padding:6px 8px; border-bottom:1px solid #edf1f7; text-align:center; color:#3a4a60">約90〜110km</td><td style="padding:6px 8px; border-bottom:1px solid #edf1f7; text-align:center; color:#3a4a60">約250〜400km</td></tr>
+          <tr style="background:#fafcff"><td style="padding:6px 8px; border-bottom:1px solid #edf1f7; color:#5a6a80; font-weight:700">ワンスパン</td><td style="padding:6px 8px; border-bottom:1px solid #edf1f7; text-align:center; color:#3a4a60">1,000〜2,000km</td><td style="padding:6px 8px; border-bottom:1px solid #edf1f7; text-align:center; color:#3a4a60">2,000〜4,000km</td></tr>
+          <tr><td style="padding:6px 8px; border-bottom:1px solid #edf1f7; color:#5a6a80; font-weight:700">発生条件</td><td style="padding:6px 8px; border-bottom:1px solid #edf1f7; text-align:center; color:#3a4a60">突発的（予測不可）</td><td style="padding:6px 8px; border-bottom:1px solid #edf1f7; text-align:center; color:#3a4a60">太陽活動に依存（周期的）</td></tr>
+          <tr style="background:#fafcff"><td style="padding:6px 8px; border-bottom:1px solid #edf1f7; color:#5a6a80; font-weight:700">CB DXとの関係</td><td style="padding:6px 8px; border-bottom:1px solid #edf1f7; text-align:center; color:#2ecc71; font-weight:700">主な伝搬手段</td><td style="padding:6px 8px; border-bottom:1px solid #edf1f7; text-align:center; color:#3a4a60">MUF≥27MHzで可能（稀）</td></tr>
+          <tr><td style="padding:6px 8px; color:#5a6a80; font-weight:700">モニター表示</td><td style="padding:6px 8px; text-align:center; color:#3a4a60">FxEs（臨界周波数）</td><td style="padding:6px 8px; text-align:center; color:#3a4a60">MUF（最高使用周波数）</td></tr>
         </tbody>
       </table>
     </div>
-    <p style="margin-top:10px; font-size:0.78rem; color:#8090a8">
-      ※ モニターに表示するMUFはNICTが実測した値です。27MHzを超えていればCBでのEs DXの条件が整っています。
+
+    <p style="margin-top:10px">
+      MUFが27MHzを超えると<strong>F2層経由でのCB DXも理論上可能</strong>になります（主に太陽活動が活発な時期）。
+      ただし日本でのCB DXの大半は<strong>Es伝搬</strong>によるものです。MUFはEs活性度の間接指標として参考にしてください。
     </p>
   </div>
 
@@ -704,6 +689,22 @@
       ・車のルーフエッジに向けて傾ける、またはアンテナ基台を斜めに固定する<br>
       ・<strong>20〜30°が現実的な妥協点</strong>（近距離改善と遠距離DXのバランス）<br>
       ・傾けると指向性が出るため、反対方向のDXには不利になる点に注意
+    </div>
+
+    <div class="formula-box" style="margin-top:10px">
+      <div style="margin-bottom:6px; font-weight:700">現場で角度を確認する方法</div>
+      <div style="margin-bottom:8px; font-size:0.8rem; color:#5a6a80">腕を伸ばしたときのこぶし幅 ≈ 10°を目安にする（天体観測でよく使うテクニック）</div>
+      <div style="line-height:2; font-size:0.82rem">
+        こぶし1個（腕伸ばし）≈ <strong>10°</strong><br>
+        こぶし2個 ≈ <strong>20°</strong>　←おすすめの傾き角<br>
+        こぶし3個 ≈ <strong>30°</strong>
+      </div>
+      <div style="margin-top:10px; font-size:0.8rem; color:#5a6a80; border-top:1px solid #d4dce8; padding-top:8px">
+        <strong>λ/4アンテナ（約2.75m）の先端変位で確認する場合：</strong><br>
+        15°傾け → 先端が根元から約 <strong>73cm</strong> 横にずれた状態<br>
+        20°傾け → 先端が根元から約 <strong>1m</strong> 横にずれた状態（目視しやすい）<br>
+        30°傾け → 先端が根元から約 <strong>1.6m</strong> 横にずれた状態（アンテナ長の約6割）
+      </div>
     </div>
   </div>
 
