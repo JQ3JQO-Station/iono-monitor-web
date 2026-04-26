@@ -274,6 +274,18 @@
       background: #d6e8f8;
     }
     .calc-map svg { display: block; width: 100%; }
+    /* スキップゾーン警告 */
+    .skip-warn {
+      border-radius: 8px;
+      padding: 10px 12px;
+      font-size: 0.82rem;
+      line-height: 1.65;
+      margin-bottom: 12px;
+    }
+    .skip-warn.ok     { background:#eafaf1; color:#1a5c35; border-left:3px solid #2ecc71; }
+    .skip-warn.caution{ background:#fff8e8; color:#5a4200; border-left:3px solid #f0a500; }
+    .skip-warn.danger { background:#fdf0f0; color:#6a1a1a; border-left:3px solid #e05050; }
+    .skip-warn strong { font-weight:800; }
 
     /* CTAボタン */
     .cta-btn {
@@ -552,6 +564,7 @@
         </div>
       </div>
       <div class="calc-midpoint" id="res-midpoint"></div>
+      <div class="skip-warn" id="res-warning"></div>
       <div class="calc-map">
         <svg id="calc-svg" viewBox="0 0 300 280" xmlns="http://www.w3.org/2000/svg"></svg>
       </div>
@@ -634,6 +647,16 @@ function nearestPref(lat, lon) {
   to.value='46';
 })();
 
+// スキップゾーン半径 (km) → SVGの楕円半径(px)
+// pxPerDegLat = 280/23, pxPerDegLon = 300/26
+function skipEllipse(fromLat, km) {
+  const pxLat = 280 / 23;
+  const pxLon = 300 / 26;
+  const ry = (km / 111) * pxLat;
+  const rx = (km / (111 * Math.cos(fromLat * Math.PI / 180))) * pxLon;
+  return { rx, ry };
+}
+
 function calcEs() {
   const fi = parseInt(document.getElementById('calc-from').value);
   const ti = parseInt(document.getElementById('calc-to').value);
@@ -647,27 +670,64 @@ function calcEs() {
   const angleRad = Math.atan(h / (dist / 2));
   const angleDeg = (angleRad * 180 / Math.PI).toFixed(1);
   const midPref = nearestPref(midLat, midLon);
-
-  document.getElementById('res-dist').textContent = dist.toLocaleString();
-  document.getElementById('res-angle').textContent = angleDeg + '°';
-
-  // 仰角で色付け
   const a = parseFloat(angleDeg);
-  const angleEl = document.getElementById('res-angle');
-  angleEl.style.color = a <= 5 ? '#3a7bd5' : a <= 10 ? '#f0a500' : '#e05050';
+
+  // スキップゾーン判定
+  // λ/4垂直: 仰角15°以上で急激に効率低下 → 距離≒740km以内が要注意
+  // 仰角25°以上は実質不可  → 距離≒430km以内が完全スキップゾーン
+  const SKIP_HARD = 430;  // km: 完全スキップ
+  const SKIP_SOFT = 740;  // km: 困難（アンテナ傾け等で改善可能）
+
+  let skipLevel = 'ok'; // 'ok' | 'caution' | 'danger'
+  let warnHtml = '';
+  if (dist < SKIP_HARD) {
+    skipLevel = 'danger';
+    warnHtml = `<strong>⚠ 完全スキップゾーン（約${dist}km）</strong><br>
+      λ/4垂直ロッドアンテナではEs経由の交信は困難です。仰角が${a}°と高すぎるため、垂直アンテナのヌル点に近づきます。<br>
+      <strong>対策：</strong>アンテナを水平方向に傾ける（車のルーフエッジに倒すなど）ことで低仰角が改善する場合がありますが、効果は限定的です。`;
+  } else if (dist < SKIP_SOFT) {
+    skipLevel = 'caution';
+    warnHtml = `<strong>△ スキップゾーン境界付近（約${dist}km）</strong><br>
+      仰角${a}°はλ/4垂直アンテナの効率が落ち始める範囲です。コンディション次第では届くこともあります。<br>
+      <strong>テクニック：</strong>アンテナを目標方向に10〜20°傾けると実効的な仰角が下がり、交信できる場合があります。`;
+  } else {
+    skipLevel = 'ok';
+    warnHtml = `<strong>◎ Es DXの有効エリア（約${dist}km）</strong><br>
+      仰角${a}°はλ/4垂直ロッドアンテナの主放射角内です。${midPref}付近でEsが発生していれば交信チャンスがあります。`;
+  }
+
+  // 表示更新
+  document.getElementById('res-dist').textContent = dist.toLocaleString();
+  document.getElementById('res-dist').style.color =
+    skipLevel === 'danger' ? '#e05050' : skipLevel === 'caution' ? '#f0a500' : '#1a3050';
+
+  document.getElementById('res-angle').textContent = angleDeg + '°';
+  document.getElementById('res-angle').style.color =
+    a <= 8 ? '#3a7bd5' : a <= 15 ? '#f0a500' : '#e05050';
 
   document.getElementById('res-midpoint').innerHTML =
     `<strong>Es反射点の目安：${midPref}付近</strong>（緯度 ${midLat.toFixed(1)}°N / 経度 ${midLon.toFixed(1)}°E）<br>` +
-    `この付近でEs層が発生していると、${f.n}↔${t.n}間での交信チャンスがあります。`;
+    `この付近でEs層が発生していると、${f.n}↔${t.n}間での交信対象エリアになります。`;
+
+  const warnEl = document.getElementById('res-warning');
+  warnEl.className = `skip-warn ${skipLevel}`;
+  warnEl.innerHTML = warnHtml;
 
   // SVG描画
   const svg = document.getElementById('calc-svg');
   const [fx,fy] = toSVG(f.lat, f.lon);
   const [tx,ty] = toSVG(t.lat, t.lon);
   const [mx,my] = toSVG(midLat, midLon);
+
+  // スキップゾーン楕円のpx半径
+  const hard = skipEllipse(f.lat, SKIP_HARD);
+  const soft = skipEllipse(f.lat, SKIP_SOFT);
+
+  // ターゲットがスキップゾーン内かどうかで経路色を変える
+  const pathColor = skipLevel === 'danger' ? '#e05050' : skipLevel === 'caution' ? '#f0a500' : '#3a7bd5';
+
   svg.innerHTML = `
     <rect width="300" height="280" fill="#d6e8f8"/>
-    <!-- 海 -->
     <text x="20" y="260" font-size="9" fill="#88aacc" font-family="sans-serif">lon 122E</text>
     <text x="248" y="260" font-size="9" fill="#88aacc" font-family="sans-serif">148E</text>
     <text x="2" y="15" font-size="9" fill="#88aacc" font-family="sans-serif">47N</text>
@@ -675,8 +735,12 @@ function calcEs() {
     <!-- グリッド線 -->
     ${[125,130,135,140,145].map(lo=>{const gx=(lo-LON0)/(LON1-LON0)*300;return `<line x1="${gx}" y1="0" x2="${gx}" y2="280" stroke="#b8d0e8" stroke-width="0.5"/>`;}).join('')}
     ${[30,35,40,45].map(la=>{const gy=(LAT0-la)/(LAT0-LAT1)*280;return `<line x1="0" y1="${gy}" x2="300" y2="${gy}" stroke="#b8d0e8" stroke-width="0.5"/>`;}).join('')}
+    <!-- スキップゾーン（困難エリア: 外側） -->
+    <ellipse cx="${fx}" cy="${fy}" rx="${soft.rx}" ry="${soft.ry}" fill="#f0a500" opacity="0.12" stroke="#f0a500" stroke-width="1" stroke-dasharray="4,3"/>
+    <!-- スキップゾーン（完全: 内側） -->
+    <ellipse cx="${fx}" cy="${fy}" rx="${hard.rx}" ry="${hard.ry}" fill="#e05050" opacity="0.15" stroke="#e05050" stroke-width="1" stroke-dasharray="3,2"/>
     <!-- 電波経路 -->
-    <line x1="${fx}" y1="${fy}" x2="${tx}" y2="${ty}" stroke="#3a7bd5" stroke-width="2" stroke-dasharray="6,3"/>
+    <line x1="${fx}" y1="${fy}" x2="${tx}" y2="${ty}" stroke="${pathColor}" stroke-width="2" stroke-dasharray="6,3"/>
     <!-- 反射点 -->
     <circle cx="${mx}" cy="${my}" r="9" fill="#f0a500" opacity="0.25"/>
     <circle cx="${mx}" cy="${my}" r="5" fill="#f0a500" stroke="#fff" stroke-width="1.5"/>
@@ -684,15 +748,17 @@ function calcEs() {
     <circle cx="${fx}" cy="${fy}" r="6" fill="#1a3050" stroke="#fff" stroke-width="1.5"/>
     <text x="${fx}" y="${fy-9}" text-anchor="middle" font-size="10" font-weight="700" fill="#1a3050" font-family="sans-serif">${f.n}</text>
     <!-- ターゲット -->
-    <circle cx="${tx}" cy="${ty}" r="6" fill="#e05050" stroke="#fff" stroke-width="1.5"/>
-    <text x="${tx}" y="${ty-9}" text-anchor="middle" font-size="10" font-weight="700" fill="#e05050" font-family="sans-serif">${t.n}</text>
+    <circle cx="${tx}" cy="${ty}" r="6" fill="${pathColor}" stroke="#fff" stroke-width="1.5"/>
+    <text x="${tx}" y="${ty-9}" text-anchor="middle" font-size="10" font-weight="700" fill="${pathColor}" font-family="sans-serif">${t.n}</text>
     <!-- 反射点ラベル -->
-    <text x="${mx}" y="${my+18}" text-anchor="middle" font-size="9" fill="#9a6200" font-weight="700" font-family="sans-serif">Es反射点</text>
+    ${skipLevel === 'ok' ? `<text x="${mx}" y="${my+18}" text-anchor="middle" font-size="9" fill="#9a6200" font-weight="700" font-family="sans-serif">Es反射点</text>` : ''}
     <!-- 凡例 -->
-    <rect x="6" y="6" width="100" height="42" rx="4" fill="rgba(255,255,255,0.8)"/>
+    <rect x="6" y="6" width="128" height="62" rx="4" fill="rgba(255,255,255,0.88)"/>
     <circle cx="16" cy="17" r="4" fill="#1a3050"/><text x="24" y="21" font-size="9" fill="#1a3050" font-family="sans-serif">自局</text>
     <circle cx="16" cy="31" r="4" fill="#e05050"/><text x="24" y="35" font-size="9" fill="#e05050" font-family="sans-serif">ターゲット</text>
-    <circle cx="16" cy="44" r="4" fill="#f0a500"/><text x="24" y="48" font-size="9" fill="#9a6200" font-family="sans-serif">Es反射点</text>
+    <rect cx="12" cy="40" width="8" height="6" fill="#e05050" opacity="0.3"/>
+    <ellipse cx="16" cy="44" rx="5" ry="4" fill="#e05050" opacity="0.25"/><text x="24" y="48" font-size="9" fill="#c03030" font-family="sans-serif">完全スキップ帯</text>
+    <ellipse cx="16" cy="57" rx="5" ry="4" fill="#f0a500" opacity="0.2"/><text x="24" y="61" font-size="9" fill="#9a6200" font-family="sans-serif">困難帯（傾け有効）</text>
   `;
 
   document.getElementById('calc-result').classList.add('visible');
