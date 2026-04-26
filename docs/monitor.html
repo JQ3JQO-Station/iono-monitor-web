@@ -411,10 +411,14 @@
       <h2>📲 LINE通知を受け取る</h2>
       <div class="modal-desc">
         <ul>
-          <li>沖縄・鹿児島・東京・北海道の<strong>全地点</strong>でFxEsが<strong>7.0 MHz超</strong>を検出すると通知が届きます</li>
+          <li>沖縄・鹿児島・東京・北海道の<strong>いずれかの地点</strong>でFxEsが<strong>7.0 MHz超</strong>を検出すると通知が届きます（各地点2時間のクールダウンあり）</li>
           <li>データは約5分ごとに更新されるため、タイムラグが生じます</li>
-          <li>登録後、受信する曜日・時間帯を設定できます</li>
+          <li>通知の確実な送信は保証されません（障害・API制限等により未着の場合があります）</li>
         </ul>
+        <div style="font-size:0.72rem;color:#8090a8;margin-top:6px;line-height:1.6">
+          友だち追加により取得するLINE UserIDは通知送信のみに使用します。<br>
+          <a href="privacy.html" target="_blank" style="color:#3a7bd5">プライバシーポリシー</a>
+        </div>
       </div>
       <a href="https://line.me/R/ti/p/@704rqoiy" target="_blank" id="line-add-btn">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.03 2 11c0 3.08 1.72 5.79 4.34 7.54L5.5 22l4.28-2.09A10.7 10.7 0 0 0 12 20c5.52 0 10-4.03 10-9S17.52 2 12 2Z"/></svg>
@@ -801,5 +805,10 @@
       if (e.target === document.getElementById('line-modal-overlay')) closeLineModal();
     }
   </script>
+  <footer style="font-size:0.6rem;color:#8090a8;text-align:center;padding:16px 0 24px">
+    © 2026 JQ3JQO / KyotoDR120 — Unofficial personal tool &nbsp;·&nbsp;
+    <a href="privacy.html" style="color:#8090a8">プライバシーポリシー</a> &nbsp;·&nbsp;
+    <a href="index.html" style="color:#8090a8">トップ</a>
+  </footer>
 </body>
 </html>
