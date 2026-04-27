@@ -294,9 +294,79 @@
       color: #8090a8;
       line-height: 1.6;
     }
+
+    /* お知らせバナー */
+    #announce-banner {
+      display: none;
+      background: #fff8e8;
+      border: 2px solid #f0a500;
+      border-radius: 10px;
+      padding: 14px 12px;
+      margin-bottom: 2px;
+      gap: 12px;
+      align-items: flex-start;
+      flex-shrink: 0;
+    }
+    #announce-banner .ann-body { flex: 1; }
+    #announce-banner .ann-label {
+      font-size: 0.58rem;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      color: #c07800;
+      margin-bottom: 4px;
+    }
+    #announce-banner .ann-title {
+      font-size: 0.82rem;
+      font-weight: 800;
+      color: #5a3800;
+      margin-bottom: 5px;
+    }
+    #announce-banner .ann-text {
+      font-size: 0.75rem;
+      color: #5a4200;
+      line-height: 1.7;
+    }
+    #announce-banner .ann-time {
+      display: inline-block;
+      margin-top: 4px;
+      background: #f0a500;
+      color: #fff;
+      font-weight: 700;
+      font-size: 0.85rem;
+      border-radius: 5px;
+      padding: 2px 10px;
+    }
+    #announce-close {
+      flex-shrink: 0;
+      width: 48px;
+      height: 48px;
+      background: #f0a500;
+      border: none;
+      border-radius: 8px;
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: #fff;
+      cursor: pointer;
+      line-height: 1;
+    }
+    #announce-close:active { filter: brightness(0.88); }
   </style>
 </head>
 <body>
+
+  <!-- お知らせバナー -->
+  <div id="announce-banner">
+    <div class="ann-body">
+      <div class="ann-label">📢 お知らせ</div>
+      <div class="ann-title">LINE通知 仕様変更のご案内</div>
+      <div class="ann-text">
+        システム変更により、LINE通知の送信時間帯が<strong>全会員一律</strong>に変更されました。<br>
+        <span class="ann-time">05:00 〜 20:00 JST</span><br><br>
+        ご理解のほどよろしくお願いいたします。
+      </div>
+    </div>
+    <button id="announce-close" onclick="closeAnnounce()" aria-label="閉じる">×</button>
+  </div>
 
   <header>
     <h1>CB DX Iono Monitor</h1>
@@ -810,5 +880,21 @@
     <a href="privacy.html" style="color:#8090a8">プライバシーポリシー</a> &nbsp;·&nbsp;
     <a href="index.html" style="color:#8090a8">トップ</a>
   </footer>
+
+  <script>
+    (function () {
+      const KEY = 'announce_20260428';
+      const EXPIRE = new Date('2026-05-06T15:00:00Z'); // 5/7 00:00 JST
+      if (Date.now() >= EXPIRE.getTime()) return;
+      const jstToday = new Date(Date.now() + 9 * 3600000).toISOString().slice(0, 10);
+      if (localStorage.getItem(KEY) === jstToday) return;
+      document.getElementById('announce-banner').style.display = 'flex';
+    })();
+    function closeAnnounce() {
+      const jstToday = new Date(Date.now() + 9 * 3600000).toISOString().slice(0, 10);
+      localStorage.setItem('announce_20260428', jstToday);
+      document.getElementById('announce-banner').style.display = 'none';
+    }
+  </script>
 </body>
 </html>

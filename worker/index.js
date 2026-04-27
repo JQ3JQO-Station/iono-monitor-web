@@ -11,8 +11,22 @@ export default {
 
     const url = new URL(request.url);
 
-    // GET → CORSプロキシ
+    // GET → CORSプロキシ / デバッグ
     if (request.method === 'GET') {
+      // LINE API 状態確認（デバッグ用）
+      if (url.searchParams.get('action') === 'line-status') {
+        const [quota, consumption] = await Promise.all([
+          fetch('https://api.line.me/v2/bot/message/quota', {
+            headers: { 'Authorization': 'Bearer ' + env.LINE_TOKEN }
+          }).then(r => r.json()),
+          fetch('https://api.line.me/v2/bot/message/quota/consumption', {
+            headers: { 'Authorization': 'Bearer ' + env.LINE_TOKEN }
+          }).then(r => r.json()),
+        ]);
+        return new Response(JSON.stringify({ quota, consumption }, null, 2), {
+          headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+        });
+      }
       const target = url.searchParams.get('url');
       if (!target) return new Response('Missing url param', { status: 400 });
       const res = await fetch(target, { headers: { 'User-Agent': 'Mozilla/5.0' } });
@@ -311,6 +325,10 @@ async function pushLine(to, text, env) {
     },
     body: JSON.stringify({ to, messages: [{ type: 'text', text }] })
   });
+  if (!res.ok) {
+    const body = await res.text().catch(() => '(body read failed)');
+    console.error(`LINE push failed: HTTP ${res.status} — ${body}`);
+  }
   return res.ok;
 }
 async function replyLine(replyToken, text, env) {

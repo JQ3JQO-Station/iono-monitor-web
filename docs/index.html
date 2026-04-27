@@ -133,9 +133,80 @@
       text-align: center;
       margin-top: 8px;
     }
+
+    /* お知らせバナー */
+    .announce-banner {
+      display: none;
+      width: 100%;
+      max-width: 420px;
+      background: #fff8e8;
+      border: 2px solid #f0a500;
+      border-radius: 12px;
+      padding: 16px 14px;
+      gap: 14px;
+      align-items: flex-start;
+    }
+    .announce-body { flex: 1; }
+    .announce-label {
+      font-size: 0.6rem;
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: #c07800;
+      margin-bottom: 6px;
+    }
+    .announce-title {
+      font-size: 0.9rem;
+      font-weight: 800;
+      color: #5a3800;
+      margin-bottom: 8px;
+    }
+    .announce-text {
+      font-size: 0.82rem;
+      color: #5a4200;
+      line-height: 1.75;
+    }
+    .announce-time {
+      display: inline-block;
+      margin-top: 6px;
+      background: #f0a500;
+      color: #fff;
+      font-weight: 700;
+      font-size: 0.95rem;
+      border-radius: 6px;
+      padding: 3px 12px;
+    }
+    .announce-close {
+      flex-shrink: 0;
+      width: 48px;
+      height: 48px;
+      background: #f0a500;
+      border: none;
+      border-radius: 10px;
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: #fff;
+      cursor: pointer;
+      line-height: 1;
+    }
+    .announce-close:active { filter: brightness(0.88); }
   </style>
 </head>
 <body>
+
+  <!-- お知らせバナー -->
+  <div class="announce-banner" id="announce-banner">
+    <div class="announce-body">
+      <div class="announce-label">📢 お知らせ</div>
+      <div class="announce-title">LINE通知 仕様変更のご案内</div>
+      <div class="announce-text">
+        システム変更により、LINE通知の送信時間帯が<strong>全会員一律</strong>に変更されました。<br>
+        <span class="announce-time">05:00 〜 20:00 JST</span><br><br>
+        ご理解のほどよろしくお願いいたします。
+      </div>
+    </div>
+    <button class="announce-close" onclick="closeAnnounce()" aria-label="閉じる">×</button>
+  </div>
 
   <div class="hero">
     <div class="hero-label">JQ3JQO / KyotoDR120</div>
@@ -204,5 +275,20 @@
   <footer>© 2026 JQ3JQO / KyotoDR120 — Unofficial personal tool<br>
     <a href="privacy.html" style="color:#8090a8">プライバシーポリシー</a></footer>
 
+  <script>
+    (function () {
+      const KEY = 'announce_20260428';
+      const EXPIRE = new Date('2026-05-06T15:00:00Z'); // 5/7 00:00 JST
+      if (Date.now() >= EXPIRE.getTime()) return;
+      const jstToday = new Date(Date.now() + 9 * 3600000).toISOString().slice(0, 10);
+      if (localStorage.getItem(KEY) === jstToday) return;
+      document.getElementById('announce-banner').style.display = 'flex';
+    })();
+    function closeAnnounce() {
+      const jstToday = new Date(Date.now() + 9 * 3600000).toISOString().slice(0, 10);
+      localStorage.setItem('announce_20260428', jstToday);
+      document.getElementById('announce-banner').style.display = 'none';
+    }
+  </script>
 </body>
 </html>
