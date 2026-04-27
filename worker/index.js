@@ -258,12 +258,16 @@ async function checkAndAlert(env) {
       const detail  = newlyTriggered.map(k => `${names[k]}: ${fxes[k]}`).join(' / ');
       const message = `⚠ CB DX Iono Monitor アラート\nFxEs >= 7.0 検出\n${detail}\n観測時刻: ${fxes.time ?? '--:--'} JST`;
 
-      await pushLine(r.lineId, message, env);
-      for (const k of newlyTriggered) {
-        r.cooldowns[k] = now; // タイムスタンプをreсipientsに保存
+      const sent = await pushLine(r.lineId, message, env);
+      if (sent) {
+        for (const k of newlyTriggered) {
+          r.cooldowns[k] = now; // タイムスタンプをreсipientsに保存
+        }
+        recipientsChanged = true;
+        console.log(`Sent alert to ${r.name}: ${newlyTriggered.join(', ')}`);
+      } else {
+        console.error(`Failed to send alert to ${r.name} — cooldown NOT set, will retry next cron`);
       }
-      recipientsChanged = true;
-      console.log(`Sent alert to ${r.name}: ${newlyTriggered.join(', ')}`);
     }
   } else {
     // 全地点解除 → 2回連続で閾値以下を確認してからクールダウンをリセット
