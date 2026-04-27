@@ -256,6 +256,14 @@ async function checkAndAlert(env) {
   const jstHour = jstDate.getUTCHours();
   const jstDay  = jstDate.getUTCDay(); // 0=日, 6=土
 
+  // システム全体の送信時間帯：05:00〜20:00 JST（月間通数節約）
+  const SYSTEM_HOUR_START = 5;
+  const SYSTEM_HOUR_END   = 20;
+  if (jstHour < SYSTEM_HOUR_START || jstHour >= SYSTEM_HOUR_END) {
+    console.log(`Out of system hours (${jstHour}:xx JST) — skip alert`);
+    return;
+  }
+
   if (triggered.length > 0) {
     for (const r of recipients) {
       if (!r.activeDays.includes(jstDay)) continue;
