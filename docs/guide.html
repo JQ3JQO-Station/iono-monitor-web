@@ -567,12 +567,12 @@
         <line x1="14" y1="29" x2="14" y2="97" stroke="#5a6a80" stroke-width="1" stroke-dasharray="3,2"/>
         <text x="4" y="65" font-size="8" fill="#5a6a80" font-family="sans-serif" transform="rotate(-90,4,65)">約3倍の高さ</text>
 
-        <!-- F2電波経路（広い弧） -->
-        <path d="M 55,172 Q 210,30 365,172" stroke="#3a7bd5" stroke-width="2" stroke-dasharray="6,3" fill="none"/>
+        <!-- F2電波経路（F2層に反射する広い弧） -->
+        <path d="M 55,172 Q 210,-114 365,172" stroke="#3a7bd5" stroke-width="2" stroke-dasharray="6,3" fill="none"/>
         <text x="210" y="148" text-anchor="middle" font-size="9" fill="#3a7bd5" font-weight="700" font-family="sans-serif">F2伝搬　ワンスパン 約2,000〜4,000km</text>
 
-        <!-- Es電波経路（狭い弧） -->
-        <path d="M 130,172 Q 210,98 290,172" stroke="#f0a500" stroke-width="2" stroke-dasharray="6,3" fill="none"/>
+        <!-- Es電波経路（Es層に反射する狭い弧） -->
+        <path d="M 130,172 Q 210,22 290,172" stroke="#f0a500" stroke-width="2" stroke-dasharray="6,3" fill="none"/>
         <text x="210" y="166" text-anchor="middle" font-size="9" fill="#9a6200" font-weight="700" font-family="sans-serif">Es伝搬 約1,000〜2,000km</text>
       </svg>
     </div>
@@ -652,11 +652,11 @@
         <!-- 傾き角 -->
         <path d="M 290,120 A 20,20 0 0,0 284,101" stroke="#e05050" stroke-width="1" fill="none"/>
         <text x="302" y="114" font-size="8" fill="#e05050" font-family="sans-serif">20°</text>
-        <!-- 最大放射方向（仰角20°に向く） -->
-        <line x1="270" y1="120" x2="340" y2="84" stroke="#3a7bd5" stroke-width="1.5" stroke-dasharray="4,2"/>
-        <polygon points="340,84 346,77 342,88" fill="#3a7bd5"/>
-        <text x="348" y="80" font-size="8" fill="#3a7bd5" font-family="sans-serif">仰角</text>
-        <text x="348" y="90" font-size="8" fill="#3a7bd5" font-family="sans-serif">≈20°</text>
+        <!-- 最大放射方向（アンテナ中央から仰角≈20°） -->
+        <line x1="277" y1="97" x2="343" y2="73" stroke="#3a7bd5" stroke-width="1.5" stroke-dasharray="4,2"/>
+        <polygon points="343,73 337,80 334,72" fill="#3a7bd5"/>
+        <text x="347" y="68" font-size="8" fill="#3a7bd5" font-family="sans-serif">仰角</text>
+        <text x="347" y="78" font-size="8" fill="#3a7bd5" font-family="sans-serif">≈20°</text>
         <!-- スキップゾーン改善表示 -->
         <rect x="270" y="108" width="30" height="8" fill="#e05050" opacity="0.2" rx="2"/>
         <text x="285" y="116" text-anchor="middle" font-size="7" fill="#c03030" font-family="sans-serif">〜430km</text>
