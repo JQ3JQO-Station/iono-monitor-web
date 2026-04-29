@@ -612,56 +612,65 @@
       スキップゾーン内の近距離にも電波が届きやすくなります。
     </p>
 
-    <!-- イラスト：傾けの効果 -->
+    <!-- イラスト：傾けの効果（Es層・スキップ距離含む） -->
     <div class="illust-wrap" style="margin:14px 0 8px">
-      <svg width="380" height="150" viewBox="0 0 380 150" xmlns="http://www.w3.org/2000/svg" aria-label="アンテナ傾けの効果イラスト">
+      <svg width="480" height="220" viewBox="0 0 480 220" xmlns="http://www.w3.org/2000/svg" aria-label="アンテナ傾けと打ち上げ角・スキップゾーンの変化（模式図）">
         <!-- 背景 -->
-        <rect width="380" height="150" fill="#f3f6fb" rx="8"/>
+        <rect width="480" height="220" fill="#f3f6fb" rx="8"/>
         <!-- 地面 -->
-        <rect x="0" y="120" width="380" height="30" fill="#c8d8b0" rx="0"/>
-        <line x1="0" y1="120" x2="380" y2="120" stroke="#b0c090" stroke-width="1"/>
-
-        <!-- 左：垂直アンテナ -->
-        <text x="70" y="15" text-anchor="middle" font-size="9" font-weight="700" fill="#1a3050" font-family="sans-serif">垂直（通常）</text>
-        <!-- アンテナ本体 -->
-        <line x1="70" y1="120" x2="70" y2="72" stroke="#1a3050" stroke-width="3"/>
-        <line x1="70" y1="72" x2="58" y2="60" stroke="#1a3050" stroke-width="2"/>
-        <line x1="70" y1="72" x2="82" y2="60" stroke="#1a3050" stroke-width="2"/>
-        <!-- 最大放射方向（低仰角・模式図） -->
-        <line x1="70" y1="96" x2="117" y2="88" stroke="#3a7bd5" stroke-width="1.5" stroke-dasharray="4,2"/>
-        <polygon points="117,88 111,93 109,85" fill="#3a7bd5"/>
-        <text x="121" y="84" font-size="8" fill="#3a7bd5" font-family="sans-serif">低仰角</text>
-        <text x="121" y="94" font-size="8" fill="#3a7bd5" font-family="sans-serif">（約10°）</text>
-        <!-- 仰角弧（模式図） -->
-        <path d="M 100,120 A 30,30 0 0,0 98,110" stroke="#3a7bd5" stroke-width="1" fill="none" stroke-dasharray="3,2"/>
-        <!-- スキップゾーン表示 -->
-        <rect x="70" y="108" width="50" height="8" fill="#e05050" opacity="0.2" rx="2"/>
-        <text x="95" y="116" text-anchor="middle" font-size="7" fill="#c03030" font-family="sans-serif">〜740km</text>
-
+        <rect x="0" y="185" width="480" height="35" fill="#c8d8b0"/>
+        <line x1="0" y1="185" x2="480" y2="185" stroke="#b0c090" stroke-width="1"/>
+        <!-- Es層（両パネル共通） -->
+        <rect x="0" y="36" width="480" height="14" fill="#f0a500" opacity="0.55"/>
+        <text x="240" y="47" text-anchor="middle" font-size="8.5" font-weight="700" fill="#7a4800" font-family="sans-serif">Es層（約100km・模式図）</text>
         <!-- 区切り線 -->
-        <line x1="190" y1="10" x2="190" y2="145" stroke="#dde4ee" stroke-width="1"/>
+        <line x1="240" y1="8" x2="240" y2="212" stroke="#dde4ee" stroke-width="1.5"/>
 
-        <!-- 右：傾けたアンテナ（20°） -->
-        <text x="290" y="15" text-anchor="middle" font-size="9" font-weight="700" fill="#e05050" font-family="sans-serif">20°傾け（ターゲット方向）</text>
-        <!-- 傾けたアンテナ本体 -->
-        <line x1="270" y1="120" x2="284" y2="73" stroke="#e05050" stroke-width="3"/>
-        <line x1="284" y1="73" x2="274" y2="60" stroke="#e05050" stroke-width="2"/>
-        <line x1="284" y1="73" x2="296" y2="64" stroke="#e05050" stroke-width="2"/>
-        <!-- 地面水平線 -->
-        <line x1="270" y1="120" x2="330" y2="120" stroke="#1a3050" stroke-width="1" opacity="0.3"/>
-        <!-- 傾き角 -->
-        <path d="M 290,120 A 20,20 0 0,0 284,101" stroke="#e05050" stroke-width="1" fill="none"/>
-        <text x="302" y="114" font-size="8" fill="#e05050" font-family="sans-serif">20°</text>
-        <!-- 最大放射方向（アンテナ中央から仰角↑・模式図） -->
-        <line x1="277" y1="97" x2="329" y2="67" stroke="#3a7bd5" stroke-width="1.5" stroke-dasharray="4,2"/>
-        <polygon points="329,67 325,74 321,67" fill="#3a7bd5"/>
-        <text x="333" y="60" font-size="8" fill="#3a7bd5" font-family="sans-serif">仰角↑</text>
-        <text x="333" y="70" font-size="8" fill="#3a7bd5" font-family="sans-serif">（約30°）</text>
-        <!-- スキップゾーン改善表示 -->
-        <rect x="270" y="108" width="30" height="8" fill="#e05050" opacity="0.2" rx="2"/>
-        <text x="285" y="116" text-anchor="middle" font-size="7" fill="#c03030" font-family="sans-serif">〜430km</text>
-        <rect x="300" y="108" width="30" height="8" fill="#f0a500" opacity="0.2" rx="2"/>
-        <text x="315" y="116" text-anchor="middle" font-size="7" fill="#9a6200" font-family="sans-serif">改善帯</text>
+        <!-- ===== LEFT: 垂直アンテナ ===== -->
+        <text x="120" y="16" text-anchor="middle" font-size="9" font-weight="700" fill="#1a3050" font-family="sans-serif">垂直（通常）→ 低仰角</text>
+        <!-- アンテナ本体 -->
+        <line x1="60" y1="185" x2="60" y2="148" stroke="#1a3050" stroke-width="3"/>
+        <line x1="60" y1="150" x2="48" y2="138" stroke="#1a3050" stroke-width="2"/>
+        <line x1="60" y1="150" x2="72" y2="138" stroke="#1a3050" stroke-width="2"/>
+        <!-- 放射矢印（低仰角 15°・パネル外へ続く） -->
+        <!-- from midpoint (60,167) direction (0.966,-0.259)×172px → (232,121) -->
+        <line x1="60" y1="167" x2="232" y2="121" stroke="#3a7bd5" stroke-width="2" stroke-dasharray="6,3"/>
+        <polygon points="232,121 225,122 226,130" fill="#3a7bd5"/>
+        <text x="236" y="117" font-size="13" fill="#3a7bd5" font-family="sans-serif" font-weight="700">→</text>
+        <!-- 仰角ラベル -->
+        <text x="105" y="115" font-size="8" fill="#3a7bd5" font-family="sans-serif">低仰角（約15°）</text>
+        <!-- 着地は遠い -->
+        <text x="120" y="200" text-anchor="middle" font-size="7.5" fill="#c03030" font-weight="700" font-family="sans-serif">Es反射→着地 約1,500km先（遠）→</text>
+
+        <!-- ===== RIGHT: 傾けたアンテナ ===== -->
+        <text x="362" y="16" text-anchor="middle" font-size="9" font-weight="700" fill="#e05050" font-family="sans-serif">20°傾け → 高仰角</text>
+        <!-- アンテナ本体（20°傾け）base=(270,185) tip=(283,150) -->
+        <line x1="270" y1="185" x2="283" y2="150" stroke="#e05050" stroke-width="3"/>
+        <line x1="283" y1="152" x2="272" y2="140" stroke="#e05050" stroke-width="2"/>
+        <line x1="283" y1="152" x2="294" y2="142" stroke="#e05050" stroke-width="2"/>
+        <!-- 地面水平基準線 -->
+        <line x1="270" y1="185" x2="318" y2="185" stroke="#1a3050" stroke-width="1" opacity="0.3"/>
+        <!-- 傾き角アーク（垂直からの20°） -->
+        <path d="M 270,162 A 23,23 0 0,1 279,163" stroke="#e05050" stroke-width="1.2" fill="none"/>
+        <text x="286" y="162" font-size="8" fill="#e05050" font-family="sans-serif">20°</text>
+        <!-- 放射矢印（高仰角60°）midpoint(277,168)→Es(349,43) -->
+        <line x1="277" y1="168" x2="349" y2="43" stroke="#3a7bd5" stroke-width="2" stroke-dasharray="6,3"/>
+        <!-- Es反射点 -->
+        <circle cx="349" cy="43" r="5" fill="#f0a500" stroke="#fff" stroke-width="1.5"/>
+        <!-- 反射後→着地(431,185) -->
+        <line x1="349" y1="43" x2="431" y2="185" stroke="#3a7bd5" stroke-width="2" stroke-dasharray="6,3"/>
+        <!-- 着地マーク -->
+        <line x1="431" y1="185" x2="431" y2="170" stroke="#2ecc71" stroke-width="2.5"/>
+        <polygon points="431,185 425,172 437,172" fill="#2ecc71"/>
+        <!-- 仰角弧（60°） -->
+        <path d="M 305,185 A 35,35 0 0,0 288,155" stroke="#3a7bd5" stroke-width="1.2" fill="none" stroke-dasharray="3,2"/>
+        <text x="318" y="162" font-size="8" fill="#3a7bd5" font-family="sans-serif">高仰角</text>
+        <text x="318" y="172" font-size="8" fill="#3a7bd5" font-family="sans-serif">（約60°）</text>
+        <!-- スキップ距離インジケーター（アンテナ基部270→着地431） -->
+        <line x1="270" y1="207" x2="431" y2="207" stroke="#2ecc71" stroke-width="1.5"/>
+        <polygon points="270,204 262,207 270,210" fill="#2ecc71"/>
+        <polygon points="431,204 439,207 431,210" fill="#2ecc71"/>
+        <text x="351" y="217" text-anchor="middle" font-size="8" fill="#2ecc71" font-weight="700" font-family="sans-serif">スキップ縮小（近距離到達）</text>
       </svg>
     </div>
 
