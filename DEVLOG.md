@@ -106,3 +106,16 @@
 - `docs/manifest.json` を `index.html` / `monitor.html` の `<head>` に `<link rel="manifest">` で紐付け
 - `apple-mobile-web-app-capable` / `apple-mobile-web-app-title` / `apple-touch-icon` メタタグ追加
 - ユーザー（karamasu0134）がiPhone PWAでの通知登録を完了確認済み
+
+### iPhone通知登録ガイドカードの追加
+- `docs/index.html`：ボタンのサブテキストから「無料・無制限」を削除
+- メニューカード下にiPhone向け通知登録ガイドカードを新設
+  - 「iPhoneはホーム画面への追加が必要」の事前説明
+  - 実機スクショ付き4ステップ手順（…→共有、ホーム画面に追加）
+- `docs/ios-step1.png` / `docs/ios-step2.png`：実機スクショをPython stdlibで300px幅にクロップ・リサイズして追加
+
+### LINE移行アナウンスバナーの追加
+- `docs/index.html`：announce-banner div を復活・内容をLINE→Web Push移行のお知らせに変更
+  - その日の初回閲覧時に表示、✕で当日非表示
+  - KEY: announce_20260502、期限: 2026-05-08T15:00:00Z（5/8 JST末まで）
+  - 旧バナー（announce_20260428）から差し替え
