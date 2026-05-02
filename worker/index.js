@@ -61,6 +61,22 @@ export default {
         });
       }
 
+      // 非ホワイトリスト登録者へのLINE終了通知（一時用）
+      if (action === 'farewell-new') {
+        const recipients = await getRecipients(env);
+        const lineWhitelist = [env.LINE_USER_ID, ...LINE_EXTRA];
+        const targets = recipients.filter(r => !lineWhitelist.includes(r.lineId));
+        const results = [];
+        for (const r of targets) {
+          const ok = await pushLine(r.lineId,
+            'CB DX Iono MonitorのLINE通知は終了しました。\n\nブラウザ通知（Web Push）に移行しています。\n\n通知の登録はこちら：\nhttps://jq3jqo-station.github.io/iono-monitor-web/\n\niPhoneの方はページ内の手順をご確認ください。\n\nJQ3JQO / KyotoDR120', env);
+          results.push({ name: r.name, ok });
+        }
+        return new Response(JSON.stringify(results, null, 2), {
+          headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+        });
+      }
+
       // VAPID 公開鍵の提供
       if (action === 'vapid-key') {
         return new Response(JSON.stringify({ publicKey: VAPID_PUBLIC_KEY }), {
@@ -122,9 +138,9 @@ async function handleWebhook(request, env, signature) {
 // ── 友達登録イベント ──────────────────────────────────────────
 async function handleFollow(event, env) {
   const userId = event.source.userId;
+  // LINE通知は終了済み。新規登録は受け付けずWeb Pushへ誘導する
   await pushLine(userId,
-    'CB DX Iono Monitor の通知登録へようこそ！\nお名前を入力してください：', env);
-  await env.IONO_STATE.put(`state_${userId}`, 'AWAITING_NAME', { expirationTtl: 86400 });
+    'CB DX Iono MonitorのLINE通知は終了しました。\n\nブラウザ通知（Web Push）に移行しています。\n\n通知の登録はこちら：\nhttps://jq3jqo-station.github.io/iono-monitor-web/\n\niPhoneの方はページ内の手順をご確認ください。\n\nJQ3JQO / KyotoDR120', env);
 }
 
 // ── メッセージイベント ────────────────────────────────────────
@@ -135,6 +151,14 @@ async function handleMessage(event, env) {
   if (userId === env.LINE_USER_ID) {
     const handled = await handleAdminCommand(text, event, env);
     if (handled) return;
+  }
+
+  // ホワイトリスト外のユーザーにはLINE通知終了案内を返す
+  const lineWhitelist = [env.LINE_USER_ID, ...LINE_EXTRA];
+  if (!lineWhitelist.includes(userId)) {
+    await pushLine(userId,
+      'CB DX Iono MonitorのLINE通知は終了しました。\n\nブラウザ通知（Web Push）に移行しています。\n\n通知の登録はこちら：\nhttps://jq3jqo-station.github.io/iono-monitor-web/\n\niPhoneの方はページ内の手順をご確認ください。\n\nJQ3JQO / KyotoDR120', env);
+    return;
   }
 
   const state = (await env.IONO_STATE.get(`state_${userId}`)) || 'NONE';
