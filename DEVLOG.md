@@ -68,3 +68,30 @@
   - 夜間の不要な送信をなくし月間消費を削減
   - サイト（index.html・monitor.html）にお知らせバナーを追加（5/6まで表示）
 - **注意**：5月1日に月間通数リセット → 通知復旧予定
+
+---
+
+## 2026-05-02 — Desktop セッション
+
+### Web Push通知の実装（LINE通知から移行）
+- **背景**：Es盛期に登録者14名×複数回でLINE月200通上限に即日到達
+- **方針**：LINE通知は3名（管理者・LV206・せたがやHY19）のみ継続、他はWeb Pushに移行
+
+#### Workerの変更（`worker/index.js`）
+- Web Push送信実装（RFC 8291 aes128gcm暗号化 + RFC 8292 VAPID JWT）
+  - CF Workers ネイティブ Web Crypto API で実装（外部ライブラリ不使用）
+  - ECDH共有シークレット → HKDF → AES-128-GCM
+- VAPIDキーペア生成・`VAPID_PRIVATE_JWK` をWorkerシークレットに登録
+- `?action=subscribe` (POST) / `?action=unsubscribe` (DELETE) エンドポイント追加
+- `checkAndAlert()` にLINEホワイトリスト（3名）チェックを追加
+- Web Push用クールダウン（`webpush_state` KVキー）を追加
+- **デプロイ**：Version ID `1b11f008`
+
+#### フロントエンドの変更
+- `docs/sw.js` 新規作成（Service Worker：push受信・通知クリック）
+- `docs/index.html`：「Es発生通知を登録する」ボタン追加、iPhone向け手順モーダル追加
+- `docs/monitor.html`：LINE申込ボタン → 通知登録ボタンに変更、モーダル追加
+
+#### LINE終了アナウンス
+- 11名（ホワイトリスト外）に終了アナウンスをLINE送信（全員 ok: true）
+- 送信時点の消費数: ~191/200通
