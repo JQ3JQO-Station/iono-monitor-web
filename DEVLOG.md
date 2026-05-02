@@ -95,3 +95,14 @@
 #### LINE終了アナウンス
 - 11名（ホワイトリスト外）に終了アナウンスをLINE送信（全員 ok: true）
 - 送信時点の消費数: ~191/200通
+
+---
+
+## 2026-05-02 続き — Desktop セッション
+
+### PWAアイコン整備
+- ホーム画面アイコンが「C」になる問題を修正
+- `docs/icon-192.png` / `docs/icon-512.png` 新規作成（Python stdlib で生成、navy背景＋amber「Es」文字）
+- `docs/manifest.json` を `index.html` / `monitor.html` の `<head>` に `<link rel="manifest">` で紐付け
+- `apple-mobile-web-app-capable` / `apple-mobile-web-app-title` / `apple-touch-icon` メタタグ追加
+- ユーザー（karamasu0134）がiPhone PWAでの通知登録を完了確認済み
