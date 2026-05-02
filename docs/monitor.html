@@ -199,7 +199,7 @@
       position: absolute;
       bottom: 8px;
       right: 8px;
-      background: #06c755;
+      background: #e05050;
       color: #fff;
       border: none;
       border-radius: 8px;
@@ -214,6 +214,22 @@
       gap: 4px;
     }
     #line-notify-btn:active { filter: brightness(0.88); }
+    #line-notify-btn.subscribed { background: #2ecc71; }
+
+    /* 通知モーダル */
+    .notify-modal {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,0.55); z-index: 1000;
+      align-items: flex-end; justify-content: center;
+    }
+    .notify-modal-inner {
+      background: #fff; border-radius: 16px 16px 0 0;
+      padding: 24px 16px 44px; max-width: 480px; width: 100%;
+      max-height: 85dvh; overflow-y: auto;
+    }
+    .notify-steps { font-size:0.85rem; color:#3a4a60; line-height:2.0; padding-left:20px; margin-bottom:12px; }
+    .notify-note { font-size:0.75rem; color:#8090a8; background:#f3f6fb; border-radius:8px; padding:10px 12px; margin-bottom:16px; }
+    .notify-close-btn { width:100%; padding:14px; background:#1a3050; color:#fff; border:none; border-radius:10px; font-size:1rem; font-weight:700; cursor:pointer; font-family:inherit; }
 
     /* ── LINEモーダル ── */
     #line-modal-overlay {
@@ -468,10 +484,9 @@
 
     </div>
 
-    <!-- LINE申込ボタン -->
-    <button id="line-notify-btn" onclick="openLineModal()">
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.03 2 11c0 3.08 1.72 5.79 4.34 7.54L5.5 22l4.28-2.09A10.7 10.7 0 0 0 12 20c5.52 0 10-4.03 10-9S17.52 2 12 2Z"/></svg>
-      LINE通知
+    <!-- 通知登録ボタン -->
+    <button id="line-notify-btn" onclick="subscribeToNotifications()">
+      🔔 通知登録
     </button>
 
   </div>
@@ -883,7 +898,87 @@
     <a href="index.html" style="color:#8090a8">トップ</a>
   </footer>
 
+  <!-- 通知手順モーダル（iPhone向け） -->
+  <div class="notify-modal" id="notify-modal">
+    <div class="notify-modal-inner">
+      <div style="font-size:0.65rem;font-weight:700;color:#3a7bd5;letter-spacing:0.14em;text-transform:uppercase;margin-bottom:6px;">📱 iPhone の方へ</div>
+      <div style="font-size:1rem;font-weight:800;color:#1a3050;margin-bottom:16px;">ホーム画面への追加が必要です</div>
+      <ol class="notify-steps">
+        <li><strong>Safari</strong> でこのページを開く<br>
+          <span style="font-size:0.78rem;color:#8090a8">Chromeをお使いの方はSafariで開き直してください</span></li>
+        <li>画面下部の <strong>共有ボタン（□↑）</strong> をタップ</li>
+        <li>「<strong>ホーム画面に追加</strong>」をタップ</li>
+        <li>右上の「<strong>追加</strong>」をタップ</li>
+        <li>ホーム画面に追加された <strong>アイコンをタップ</strong> して起動</li>
+        <li>「🔔 通知登録」を再度タップ → 「<strong>許可</strong>」</li>
+      </ol>
+      <div class="notify-note">※ iOSの仕様により、ホーム画面への追加が必要です。Android・PCはボタン1つで完了します。</div>
+      <button class="notify-close-btn" onclick="document.getElementById('notify-modal').style.display='none'">閉じる</button>
+    </div>
+  </div>
+
   <script>
+    const VAPID_KEY = 'BDBvHMkYX-dzeypbANl9p9_F65nDHyQwdxPMHWLwlkFiQSg11Hj0kewdgGSCKzSYb6iHHOE-REVU-ukDM7VCOsE';
+    const WORKER = 'https://iono-line-alert.yotsuzeki.workers.dev';
+
+    function isIOS() { return /iphone|ipad|ipod/i.test(navigator.userAgent); }
+    function isPWA() { return window.navigator.standalone === true; }
+
+    function urlB64ToUint8(b64) {
+      const pad = '='.repeat((4 - b64.length % 4) % 4);
+      const bin = atob((b64 + pad).replace(/-/g,'+').replace(/_/g,'/'));
+      return new Uint8Array([...bin].map(c => c.charCodeAt(0)));
+    }
+
+    function updateNotifyBtn() {
+      const btn = document.getElementById('line-notify-btn');
+      if (!btn) return;
+      if (localStorage.getItem('webpush_subscribed') === '1') {
+        btn.classList.add('subscribed');
+        btn.textContent = '✅ 通知登録済み';
+      }
+    }
+
+    async function subscribeToNotifications() {
+      if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+        alert('このブラウザはプッシュ通知に対応していません。');
+        return;
+      }
+      if (isIOS() && !isPWA()) {
+        document.getElementById('notify-modal').style.display = 'flex';
+        return;
+      }
+      try {
+        const reg = await navigator.serviceWorker.register('./sw.js');
+        await navigator.serviceWorker.ready;
+        let sub = await reg.pushManager.getSubscription();
+        if (!sub) {
+          sub = await reg.pushManager.subscribe({
+            userVisibleOnly: true,
+            applicationServerKey: urlB64ToUint8(VAPID_KEY),
+          });
+        }
+        await fetch(WORKER + '?action=subscribe', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(sub.toJSON()),
+        });
+        localStorage.setItem('webpush_subscribed', '1');
+        updateNotifyBtn();
+        alert('✅ 通知の登録が完了しました！\nEs発生時に通知が届きます。');
+      } catch (e) {
+        if (e.name === 'NotAllowedError') {
+          alert('通知が拒否されています。\nブラウザの設定から許可してください。');
+        } else {
+          console.error(e);
+          alert('登録に失敗しました。');
+        }
+      }
+    }
+
+    navigator.serviceWorker?.register('./sw.js').catch(() => {});
+    updateNotifyBtn();
+
     (function () {
       const KEY = 'announce_20260428';
       const EXPIRE = new Date('2026-05-06T15:00:00Z'); // 5/7 00:00 JST

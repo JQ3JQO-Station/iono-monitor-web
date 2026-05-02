@@ -1,20 +1,53 @@
+// VAPID公開鍵（フロントエンドと共有）
+const VAPID_PUBLIC_KEY = 'BDBvHMkYX-dzeypbANl9p9_F65nDHyQwdxPMHWLwlkFiQSg11Hj0kewdgGSCKzSYb6iHHOE-REVU-ukDM7VCOsE';
+
+// LINE継続受信者（管理者 = env.LINE_USER_ID に加えて）
+const LINE_EXTRA = [
+  'U5d9fea4f70f84986846c41603f5afd7b', // LV206
+  'U7cef974f1cb8fdd4a6a642921850d3fd', // せたがやHY19
+];
+
 export default {
   // ── ブラウザ / LINE Webhook からのリクエスト ─────────────────
   async fetch(request, env) {
     if (request.method === 'OPTIONS') {
       return new Response(null, { headers: {
         'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'GET, POST',
+        'Access-Control-Allow-Methods': 'GET, POST, DELETE',
         'Access-Control-Allow-Headers': 'Content-Type',
       }});
     }
 
     const url = new URL(request.url);
+    const action = url.searchParams.get('action');
 
-    // GET → CORSプロキシ / デバッグ
+    // ── Web Push 購読登録 ──────────────────────────────────────
+    if (request.method === 'POST' && action === 'subscribe') {
+      const sub = await request.json();
+      if (!sub?.endpoint || !sub?.keys?.p256dh || !sub?.keys?.auth) {
+        return new Response('Invalid subscription', { status: 400 });
+      }
+      const subs = await getPushSubscriptions(env);
+      if (!subs.find(s => s.endpoint === sub.endpoint)) {
+        subs.push(sub);
+        await env.IONO_STATE.put('push_subscriptions', JSON.stringify(subs));
+      }
+      return new Response('OK', { headers: { 'Access-Control-Allow-Origin': '*' } });
+    }
+
+    // ── Web Push 購読解除 ──────────────────────────────────────
+    if (request.method === 'DELETE' && action === 'unsubscribe') {
+      const { endpoint } = await request.json();
+      let subs = await getPushSubscriptions(env);
+      subs = subs.filter(s => s.endpoint !== endpoint);
+      await env.IONO_STATE.put('push_subscriptions', JSON.stringify(subs));
+      return new Response('OK', { headers: { 'Access-Control-Allow-Origin': '*' } });
+    }
+
+    // ── GET ────────────────────────────────────────────────────
     if (request.method === 'GET') {
-      // LINE API 状態確認（デバッグ用）
-      if (url.searchParams.get('action') === 'line-status') {
+      // LINE API 状態確認
+      if (action === 'line-status') {
         const [quota, consumption] = await Promise.all([
           fetch('https://api.line.me/v2/bot/message/quota', {
             headers: { 'Authorization': 'Bearer ' + env.LINE_TOKEN }
@@ -27,6 +60,15 @@ export default {
           headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
         });
       }
+
+      // VAPID 公開鍵の提供
+      if (action === 'vapid-key') {
+        return new Response(JSON.stringify({ publicKey: VAPID_PUBLIC_KEY }), {
+          headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+        });
+      }
+
+      // CORSプロキシ
       const target = url.searchParams.get('url');
       if (!target) return new Response('Missing url param', { status: 400 });
       const res = await fetch(target, { headers: { 'User-Agent': 'Mozilla/5.0' } });
@@ -40,10 +82,9 @@ export default {
     if (request.method === 'POST') {
       const signature = request.headers.get('X-Line-Signature');
       if (signature) {
-        // LINE Webhook
         return handleWebhook(request, env, signature);
       }
-      // 既存: ブラウザからの直接LINE送信（互換維持）
+      // 互換維持
       const { message } = await request.json();
       const ok = await pushLine(env.LINE_USER_ID, message, env);
       return new Response(JSON.stringify({ ok }), {
@@ -54,7 +95,7 @@ export default {
     return new Response('Method not allowed', { status: 405 });
   },
 
-  // ── Cron（15分ごと自動実行） ───────────────────────────────────
+  // ── Cron（5分ごと自動実行） ────────────────────────────────
   async scheduled(event, env, ctx) {
     ctx.waitUntil(checkAndAlert(env));
   },
@@ -63,13 +104,10 @@ export default {
 // ── LINE Webhook ─────────────────────────────────────────────
 async function handleWebhook(request, env, signature) {
   const body = await request.text();
-
-  // 署名検証（LINE_CHANNEL_SECRET が設定されている場合）
   if (env.LINE_CHANNEL_SECRET) {
     const valid = await verifySignature(body, signature, env.LINE_CHANNEL_SECRET);
     if (!valid) return new Response('Unauthorized', { status: 401 });
   }
-
   const { events } = JSON.parse(body);
   for (const event of events) {
     if (event.type === 'follow') {
@@ -84,7 +122,6 @@ async function handleWebhook(request, env, signature) {
 // ── 友達登録イベント ──────────────────────────────────────────
 async function handleFollow(event, env) {
   const userId = event.source.userId;
-  // replyLine は返信トークン期限切れで失敗しやすいため pushLine を使用
   await pushLine(userId,
     'CB DX Iono Monitor の通知登録へようこそ！\nお名前を入力してください：', env);
   await env.IONO_STATE.put(`state_${userId}`, 'AWAITING_NAME', { expirationTtl: 86400 });
@@ -95,7 +132,6 @@ async function handleMessage(event, env) {
   const userId = event.source.userId;
   const text   = event.message.text.trim();
 
-  // 管理者コマンド（一覧など管理専用コマンドのみ先に処理。設定変更・状態は通常フローへ）
   if (userId === env.LINE_USER_ID) {
     const handled = await handleAdminCommand(text, event, env);
     if (handled) return;
@@ -103,7 +139,6 @@ async function handleMessage(event, env) {
 
   const state = (await env.IONO_STATE.get(`state_${userId}`)) || 'NONE';
 
-  // 名前の受付 → 承認不要・即時登録
   if (state === 'AWAITING_NAME') {
     const recipients = await getRecipients(env);
     if (!recipients.find(r => r.lineId === userId)) {
@@ -118,22 +153,19 @@ async function handleMessage(event, env) {
     await env.IONO_STATE.put(`state_${userId}`, 'AWAITING_DAYS', { expirationTtl: 86400 });
     await pushLine(userId,
       `✅ ${text} さん、登録しました！\n\n通知を受け取る曜日を教えてください。\n「毎日」「平日」「土日」のいずれかで入力してください。`, env);
-    // 管理者に通知
     if (userId !== env.LINE_USER_ID) {
       await pushLine(env.LINE_USER_ID, `📩 新規登録\n名前: ${text}`, env);
     }
     return;
   }
 
-  // 曜日設定
   if (state === 'AWAITING_DAYS') {
     let days;
     if (text.includes('毎日'))    days = [0,1,2,3,4,5,6];
     else if (text.includes('平日')) days = [1,2,3,4,5];
     else if (text.includes('土日')) days = [0,6];
     else {
-      await replyLine(event.replyToken,
-        '「毎日」「平日」「土日」のいずれかで入力してください。', env);
+      await replyLine(event.replyToken, '「毎日」「平日」「土日」のいずれかで入力してください。', env);
       return;
     }
     await updateRecipient(userId, { activeDays: days }, env);
@@ -143,7 +175,6 @@ async function handleMessage(event, env) {
     return;
   }
 
-  // 時間帯設定
   if (state === 'AWAITING_HOURS') {
     const match = text.match(/^(\d{1,2})-(\d{1,2})$/);
     if (!match) {
@@ -154,7 +185,6 @@ async function handleMessage(event, env) {
     const end   = parseInt(match[2]);
     await updateRecipient(userId, { activeHours: { start, end } }, env);
     await env.IONO_STATE.delete(`state_${userId}`);
-
     const recipients = await getRecipients(env);
     const r = recipients.find(r => r.lineId === userId);
     const dayLabel = { '0,1,2,3,4,5,6': '毎日', '1,2,3,4,5': '平日', '0,6': '土日' };
@@ -164,7 +194,6 @@ async function handleMessage(event, env) {
     return;
   }
 
-  // 設定変更コマンド
   if (text === '設定変更') {
     await env.IONO_STATE.put(`state_${userId}`, 'AWAITING_DAYS', { expirationTtl: 86400 });
     await replyLine(event.replyToken,
@@ -172,7 +201,6 @@ async function handleMessage(event, env) {
     return;
   }
 
-  // 登録状況確認
   if (text === '状態') {
     const recipients = await getRecipients(env);
     const r = recipients.find(r => r.lineId === userId);
@@ -187,7 +215,6 @@ async function handleMessage(event, env) {
     return;
   }
 
-  // 未登録ユーザーが何か送ってきた場合 → 登録フローを再起動
   const recipients = await getRecipients(env);
   if (!recipients.find(r => r.lineId === userId)) {
     await env.IONO_STATE.put(`state_${userId}`, 'AWAITING_NAME', { expirationTtl: 86400 });
@@ -197,7 +224,6 @@ async function handleMessage(event, env) {
 }
 
 // ── 管理者コマンド ────────────────────────────────────────────
-// 管理専用コマンドを処理した場合 true を返す。それ以外は false を返し通常フローへ
 async function handleAdminCommand(text, event, env) {
   if (text === '一覧') {
     const recipients = await getRecipients(env);
@@ -212,7 +238,6 @@ async function handleAdminCommand(text, event, env) {
     await pushLine(env.LINE_USER_ID, `📋 登録者一覧（${recipients.length}名）\n${list}`, env);
     return true;
   }
-  // 一覧以外（設定変更・状態など）は通常フローに任せる
   return false;
 }
 
@@ -230,7 +255,6 @@ async function checkAndAlert(env) {
   const fxes = parseFxEs(html);
   if (!fxes) { console.log('FxEs parse failed'); return; }
 
-  // recipients を1回だけ読み込む（クールダウン情報も含む）← KV読み取りを集約
   const recipients = await getRecipients(env);
   let recipientsChanged = false;
 
@@ -251,12 +275,12 @@ async function checkAndAlert(env) {
   });
 
   const now = Date.now();
-  const COOLDOWN_MS = 2 * 60 * 60 * 1000; // 2時間
+  const COOLDOWN_MS = 2 * 60 * 60 * 1000;
   const jstDate = new Date(now + 9 * 3600000);
   const jstHour = jstDate.getUTCHours();
-  const jstDay  = jstDate.getUTCDay(); // 0=日, 6=土
+  const jstDay  = jstDate.getUTCDay();
 
-  // システム全体の送信時間帯：05:00〜20:00 JST（月間通数節約）
+  // システム時間帯チェック：05:00〜20:00 JST
   const SYSTEM_HOUR_START = 5;
   const SYSTEM_HOUR_END   = 20;
   if (jstHour < SYSTEM_HOUR_START || jstHour >= SYSTEM_HOUR_END) {
@@ -264,14 +288,16 @@ async function checkAndAlert(env) {
     return;
   }
 
+  const lineWhitelist = [env.LINE_USER_ID, ...LINE_EXTRA];
+
   if (triggered.length > 0) {
+    // ── LINE通知（ホワイトリスト3名のみ）
     for (const r of recipients) {
+      if (!lineWhitelist.includes(r.lineId)) continue;
       if (!r.activeDays.includes(jstDay)) continue;
       if (jstHour < r.activeHours.start || jstHour >= r.activeHours.end) continue;
 
       if (!r.cooldowns) r.cooldowns = {};
-
-      // クールダウンをメモリ内で確認（KV読み取り不要）
       const newlyTriggered = triggered.filter(k =>
         !r.cooldowns[k] || (now - r.cooldowns[k]) >= COOLDOWN_MS
       );
@@ -282,21 +308,25 @@ async function checkAndAlert(env) {
 
       const sent = await pushLine(r.lineId, message, env);
       if (sent) {
-        for (const k of newlyTriggered) {
-          r.cooldowns[k] = now; // タイムスタンプをreсipientsに保存
-        }
+        for (const k of newlyTriggered) r.cooldowns[k] = now;
         recipientsChanged = true;
-        console.log(`Sent alert to ${r.name}: ${newlyTriggered.join(', ')}`);
+        console.log(`LINE sent to ${r.name}: ${newlyTriggered.join(', ')}`);
       } else {
-        console.error(`Failed to send alert to ${r.name} — cooldown NOT set, will retry next cron`);
+        console.error(`LINE failed for ${r.name} — cooldown NOT set`);
       }
     }
+
+    // ── Web Push通知（全購読者）
+    await sendWebPushAlert(triggered, fxes, names, now, COOLDOWN_MS, env);
+
   } else {
-    // 全地点解除 → 2回連続で閾値以下を確認してからクールダウンをリセット
+    // 全地点解除 → 2回確認後にクールダウンリセット
     const clearCount = parseInt(await env.IONO_STATE.get('alert_clearing') || '0') + 1;
     if (clearCount >= 2) {
       for (const r of recipients) { r.cooldowns = {}; }
       await env.IONO_STATE.delete('alert_clearing');
+      // Web Pushのクールダウンもリセット
+      await env.IONO_STATE.delete('webpush_state');
       recipientsChanged = true;
       console.log(`FxEs all clear (confirmed x2) → cooldown cleared`);
     } else {
@@ -305,13 +335,212 @@ async function checkAndAlert(env) {
     }
   }
 
-  // 変更があった場合のみ1回だけ保存 ← writeを最小化
   if (recipientsChanged) {
     await env.IONO_STATE.put('recipients', JSON.stringify(recipients));
   }
 }
 
-// ── KV ヘルパー ────────────────────────────────────────────────
+// ── Web Push アラート送信 ─────────────────────────────────────
+async function sendWebPushAlert(triggered, fxes, names, now, COOLDOWN_MS, env) {
+  const subs = await getPushSubscriptions(env);
+  if (subs.length === 0) return;
+
+  // Web Push用クールダウン
+  const stateStr = await env.IONO_STATE.get('webpush_state');
+  const wpState = stateStr ? JSON.parse(stateStr) : { cooldowns: {} };
+
+  const newlyTriggered = triggered.filter(k =>
+    !wpState.cooldowns[k] || (now - wpState.cooldowns[k]) >= COOLDOWN_MS
+  );
+  if (newlyTriggered.length === 0) {
+    console.log('Web Push: all stations in cooldown');
+    return;
+  }
+
+  const detail  = newlyTriggered.map(k => `${names[k]}: ${fxes[k]}`).join(' / ');
+  const payload = JSON.stringify({
+    title: '⚠ CB DX Iono Monitor',
+    body: `FxEs >= 7.0 検出: ${detail}（${fxes.time ?? '--:--'} JST）`,
+    url: 'https://jq3jqo-station.github.io/iono-monitor-web/monitor.html',
+  });
+
+  let successCount = 0;
+  const validSubs = [];
+  for (const sub of subs) {
+    try {
+      const ok = await sendWebPush(sub, payload, env);
+      if (ok) {
+        successCount++;
+        validSubs.push(sub);
+      } else {
+        console.log(`Web Push failed (410 expired?): ${sub.endpoint.slice(0, 60)}`);
+        // 410 Gone = 期限切れ購読は削除済み（sendWebPushで対処）
+        validSubs.push(sub); // 一旦残す（410は別処理）
+      }
+    } catch (e) {
+      console.error('Web Push error:', e.message);
+      validSubs.push(sub);
+    }
+  }
+
+  for (const k of newlyTriggered) wpState.cooldowns[k] = now;
+  await env.IONO_STATE.put('webpush_state', JSON.stringify(wpState));
+  console.log(`Web Push sent to ${successCount}/${subs.length} subscribers`);
+}
+
+// ── Web Push 送信（RFC 8291 / RFC 8292） ───────────────────────
+async function sendWebPush(subscription, payloadStr, env) {
+  const { endpoint, keys } = subscription;
+
+  // ペイロード暗号化
+  const { ciphertext, salt, senderPublicKey } = await encryptWebPush(
+    payloadStr, keys.p256dh, keys.auth
+  );
+
+  // aes128gcm レコード形式（RFC 8188）
+  const rs = new Uint8Array(4);
+  new DataView(rs.buffer).setUint32(0, 4096, false);
+  const keylen = new Uint8Array([65]);
+  const body = concatBytes(salt, rs, keylen, senderPublicKey, ciphertext);
+
+  // VAPID認証ヘッダー
+  const authorization = await createVapidAuth(endpoint, env);
+
+  const res = await fetch(endpoint, {
+    method: 'POST',
+    headers: {
+      'Authorization': authorization,
+      'Content-Type': 'application/octet-stream',
+      'Content-Encoding': 'aes128gcm',
+      'TTL': '86400',
+    },
+    body: body,
+  });
+
+  if (!res.ok) {
+    const text = await res.text().catch(() => '');
+    console.error(`Web Push HTTP ${res.status}: ${text.slice(0, 100)}`);
+  }
+  return res.ok;
+}
+
+// ── RFC 8291 ペイロード暗号化 ─────────────────────────────────
+async function encryptWebPush(payloadStr, p256dh, auth) {
+  const recipientPubKeyBytes = b64urlToBytes(p256dh);
+  const authSecret = b64urlToBytes(auth);
+  const payload = new TextEncoder().encode(payloadStr);
+
+  // 送信者の一時鍵ペア生成
+  const senderKP = await crypto.subtle.generateKey(
+    { name: 'ECDH', namedCurve: 'P-256' }, true, ['deriveBits']
+  );
+  const senderPubKeyBytes = new Uint8Array(
+    await crypto.subtle.exportKey('raw', senderKP.publicKey)
+  );
+
+  // 受信者公開鍵インポート
+  const recipientPubKey = await crypto.subtle.importKey(
+    'raw', recipientPubKeyBytes,
+    { name: 'ECDH', namedCurve: 'P-256' }, false, []
+  );
+
+  // ECDH共有シークレット
+  const sharedSecret = new Uint8Array(await crypto.subtle.deriveBits(
+    { name: 'ECDH', public: recipientPubKey },
+    senderKP.privateKey, 256
+  ));
+
+  // ソルト（16バイト）
+  const salt = crypto.getRandomValues(new Uint8Array(16));
+
+  // PRK = HKDF(IKM=sharedSecret, salt=authSecret, info="WebPush: info\0"+recipPub+sendPub, L=32)
+  const prk_info = concatBytes(
+    new TextEncoder().encode('WebPush: info\x00'),
+    recipientPubKeyBytes,
+    senderPubKeyBytes
+  );
+  const prk = await hkdf(sharedSecret, authSecret, prk_info, 32);
+
+  // CEK = HKDF(IKM=prk, salt=salt, info="Content-Encoding: aes128gcm\0", L=16)
+  const cek = await hkdf(prk, salt,
+    new TextEncoder().encode('Content-Encoding: aes128gcm\x00'), 16);
+
+  // Nonce = HKDF(IKM=prk, salt=salt, info="Content-Encoding: nonce\0", L=12)
+  const nonce = await hkdf(prk, salt,
+    new TextEncoder().encode('Content-Encoding: nonce\x00'), 12);
+
+  // AES-128-GCM暗号化（payload || 0x02）
+  const plaintext = concatBytes(payload, new Uint8Array([2]));
+  const cekKey = await crypto.subtle.importKey('raw', cek, { name: 'AES-GCM' }, false, ['encrypt']);
+  const ciphertext = new Uint8Array(await crypto.subtle.encrypt(
+    { name: 'AES-GCM', iv: nonce }, cekKey, plaintext
+  ));
+
+  return { ciphertext, salt, senderPublicKey: senderPubKeyBytes };
+}
+
+// ── HKDF (Extract + Expand, single block) ────────────────────
+async function hkdf(ikm, salt, info, length) {
+  const saltKey = await crypto.subtle.importKey(
+    'raw', salt, { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']
+  );
+  const prk = new Uint8Array(await crypto.subtle.sign('HMAC', saltKey, ikm));
+  const prkKey = await crypto.subtle.importKey(
+    'raw', prk, { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']
+  );
+  const t = new Uint8Array(await crypto.subtle.sign(
+    'HMAC', prkKey, concatBytes(info, new Uint8Array([1]))
+  ));
+  return t.slice(0, length);
+}
+
+// ── VAPID JWT（RFC 8292） ────────────────────────────────────
+async function createVapidAuth(endpoint, env) {
+  const audience = new URL(endpoint).origin;
+  const now = Math.floor(Date.now() / 1000);
+  const header  = strToB64url(JSON.stringify({ typ: 'JWT', alg: 'ES256' }));
+  const payload = strToB64url(JSON.stringify({
+    aud: audience, exp: now + 3600, sub: 'mailto:yotsuzeki@gmail.com'
+  }));
+  const toSign = `${header}.${payload}`;
+
+  const jwk = JSON.parse(env.VAPID_PRIVATE_JWK);
+  const privateKey = await crypto.subtle.importKey(
+    'jwk', { ...jwk, key_ops: ['sign'] },
+    { name: 'ECDSA', namedCurve: 'P-256' }, false, ['sign']
+  );
+  const sig = new Uint8Array(await crypto.subtle.sign(
+    { name: 'ECDSA', hash: 'SHA-256' },
+    privateKey,
+    new TextEncoder().encode(toSign)
+  ));
+  const token = `${toSign}.${bytesToB64url(sig)}`;
+  return `vapid t=${token},k=${VAPID_PUBLIC_KEY}`;
+}
+
+// ── バイト列ユーティリティ ────────────────────────────────────
+function concatBytes(...arrays) {
+  const total = arrays.reduce((s, a) => s + a.length, 0);
+  const out = new Uint8Array(total);
+  let off = 0;
+  for (const a of arrays) { out.set(a, off); off += a.length; }
+  return out;
+}
+function b64urlToBytes(str) {
+  const padded = str + '='.repeat((4 - str.length % 4) % 4);
+  const bin = atob(padded.replace(/-/g, '+').replace(/_/g, '/'));
+  return new Uint8Array([...bin].map(c => c.charCodeAt(0)));
+}
+function bytesToB64url(bytes) {
+  let bin = '';
+  for (const b of bytes) bin += String.fromCharCode(b);
+  return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+}
+function strToB64url(str) {
+  return bytesToB64url(new TextEncoder().encode(str));
+}
+
+// ── KV ヘルパー ───────────────────────────────────────────────
 async function getRecipients(env) {
   const str = await env.IONO_STATE.get('recipients');
   return str ? JSON.parse(str) : [];
@@ -321,6 +550,10 @@ async function updateRecipient(userId, updates, env) {
   const r = recipients.find(r => r.lineId === userId);
   if (r) Object.assign(r, updates);
   await env.IONO_STATE.put('recipients', JSON.stringify(recipients));
+}
+async function getPushSubscriptions(env) {
+  const str = await env.IONO_STATE.get('push_subscriptions');
+  return str ? JSON.parse(str) : [];
 }
 
 // ── LINE API ──────────────────────────────────────────────────
@@ -351,7 +584,7 @@ async function replyLine(replyToken, text, env) {
   return res.ok;
 }
 
-// ── 署名検証 ─────────────────────────────────────────────────
+// ── 署名検証 ──────────────────────────────────────────────────
 async function verifySignature(body, signature, channelSecret) {
   const enc = new TextEncoder();
   const key = await crypto.subtle.importKey(
