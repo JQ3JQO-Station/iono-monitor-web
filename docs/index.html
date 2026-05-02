@@ -139,6 +139,74 @@
       cursor: pointer; font-family: inherit;
     }
 
+    /* iPhone通知ガイドカード */
+    .ios-guide-card {
+      background: #fff;
+      border-radius: 14px;
+      box-shadow: 0 1px 4px rgba(0,20,60,0.10), 0 0 0 1px rgba(0,20,60,0.05);
+      padding: 16px;
+      width: 100%;
+      max-width: 420px;
+    }
+    .ios-guide-intro {
+      font-size: 0.82rem;
+      color: #5a3800;
+      background: #fff8e8;
+      border: 1px solid #f0d080;
+      border-radius: 8px;
+      padding: 10px 12px;
+      margin-bottom: 14px;
+      line-height: 1.65;
+    }
+    .ios-steps-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+    .ios-step {
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+    }
+    .ios-step-num {
+      flex-shrink: 0;
+      width: 24px;
+      height: 24px;
+      background: #1a3050;
+      color: #fff;
+      border-radius: 50%;
+      font-size: 0.75rem;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-top: 2px;
+    }
+    .ios-step-body { flex: 1; }
+    .ios-step-text {
+      font-size: 0.82rem;
+      color: #3a4a60;
+      line-height: 1.6;
+      margin-bottom: 8px;
+    }
+    .ios-step-img {
+      width: 100%;
+      max-width: 260px;
+      border-radius: 8px;
+      border: 1px solid #dde3ee;
+      display: block;
+    }
+    .ios-note {
+      font-size: 0.72rem;
+      color: #8090a8;
+      background: #f3f6fb;
+      border-radius: 8px;
+      padding: 8px 12px;
+      margin-top: 14px;
+      line-height: 1.6;
+    }
+
     /* 出典 */
     .source-list { list-style: none; }
     .source-list li {
@@ -269,10 +337,48 @@
       <span class="icon">🔔</span>
       <span class="btn-text">
         Es発生通知を登録する
-        <span class="btn-sub" id="notify-sub">ブラウザ通知（無料・無制限）</span>
+        <span class="btn-sub" id="notify-sub">ブラウザ通知</span>
       </span>
       <span class="arrow">›</span>
     </button>
+  </div>
+
+  <!-- iPhone向け通知登録ガイド -->
+  <div class="ios-guide-card">
+    <div class="card-title">📱 iPhoneをご利用の方へ</div>
+    <div class="ios-guide-intro">
+      iPhoneでは通知の登録にホーム画面への追加が必要です。<br>
+      Android・PCの方はボタンを押して「許可」するだけで完了します。
+    </div>
+    <ol class="ios-steps-list">
+      <li class="ios-step">
+        <div class="ios-step-num">1</div>
+        <div class="ios-step-body">
+          <div class="ios-step-text">Safariのアドレスバー右の <strong>「…」</strong> をタップ → <strong>「共有」</strong> を選択</div>
+          <img src="./ios-step1.png" class="ios-step-img" alt="…メニューから共有を選択">
+        </div>
+      </li>
+      <li class="ios-step">
+        <div class="ios-step-num">2</div>
+        <div class="ios-step-body">
+          <div class="ios-step-text">共有メニューの中から <strong>「ホーム画面に追加」</strong> をタップ → 右上の <strong>「追加」</strong> をタップ</div>
+          <img src="./ios-step2.png" class="ios-step-img" alt="ホーム画面に追加を選択">
+        </div>
+      </li>
+      <li class="ios-step">
+        <div class="ios-step-num">3</div>
+        <div class="ios-step-body">
+          <div class="ios-step-text">ホーム画面に追加された <strong>「CB DX Iono Monitor」</strong> アイコンをタップして起動</div>
+        </div>
+      </li>
+      <li class="ios-step">
+        <div class="ios-step-num">4</div>
+        <div class="ios-step-body">
+          <div class="ios-step-text">🔔 <strong>「Es発生通知を登録する」</strong> をタップ → <strong>「許可」</strong></div>
+        </div>
+      </li>
+    </ol>
+    <div class="ios-note">※ Safariでないと登録できません。Chromeをお使いの方はSafariで開き直してください。</div>
   </div>
 
   <!-- データ出典 -->
