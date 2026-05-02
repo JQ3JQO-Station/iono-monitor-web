@@ -307,6 +307,21 @@
 </head>
 <body>
 
+  <!-- お知らせバナー -->
+  <div class="announce-banner" id="announce-banner" style="display:none">
+    <div class="announce-body">
+      <div class="announce-label">📢 通知サービス変更のお知らせ</div>
+      <div class="announce-title">LINE通知を終了し、ブラウザ通知へ移行しました</div>
+      <div class="announce-text">
+        本サービスは個人が運営する非営利・完全無償のボランティアサイトです。想定を上回る方々にご登録いただいたことにより、LINE通知の月間上限に達するようになりました。安定してお届けするため、通数制限のないブラウザ通知（Web Push）に移行しました。<br><br>
+        新しい通知登録はこのページの 🔔「Es発生通知を登録する」ボタンから行えます。<br>
+        ・Android・PC：ボタンを押して「許可」するだけ<br>
+        ・iPhone：このページ下部の手順をご確認ください<br><br>
+        <span style="font-size:0.78rem;color:#8a6800">JQ3JQO / KyotoDR120</span>
+      </div>
+    </div>
+    <button class="announce-close" onclick="closeAnnounce()">✕</button>
+  </div>
 
   <div class="hero">
     <div class="hero-label">JQ3JQO / KyotoDR120</div>
@@ -497,8 +512,8 @@
     });
 
     (function () {
-      const KEY = 'announce_20260428';
-      const EXPIRE = new Date('2026-05-06T15:00:00Z'); // 5/7 00:00 JST
+      const KEY = 'announce_20260502';
+      const EXPIRE = new Date('2026-05-08T15:00:00Z'); // 5/9 00:00 JST（5/8いっぱい表示）
       if (Date.now() >= EXPIRE.getTime()) return;
       const jstToday = new Date(Date.now() + 9 * 3600000).toISOString().slice(0, 10);
       if (localStorage.getItem(KEY) === jstToday) return;
@@ -506,7 +521,7 @@
     })();
     function closeAnnounce() {
       const jstToday = new Date(Date.now() + 9 * 3600000).toISOString().slice(0, 10);
-      localStorage.setItem('announce_20260428', jstToday);
+      localStorage.setItem('announce_20260502', jstToday);
       document.getElementById('announce-banner').style.display = 'none';
     }
   </script>
