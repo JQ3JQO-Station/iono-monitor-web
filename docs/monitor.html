@@ -925,12 +925,13 @@
     }
 
     async function subscribeToNotifications() {
-      if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
-        alert('このブラウザはプッシュ通知に対応していません。');
-        return;
-      }
+      // iOSはPWA未インストール状態だとPushManagerが存在しないため先に判定
       if (isIOS() && !isPWA()) {
         document.getElementById('notify-modal').style.display = 'flex';
+        return;
+      }
+      if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+        alert('このブラウザはプッシュ通知に対応していません。');
         return;
       }
       try {
