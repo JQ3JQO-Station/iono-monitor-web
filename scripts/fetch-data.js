@@ -211,6 +211,40 @@ async function main() {
   const outPath = path.join(__dirname, '..', 'docs', 'data.json');
   fs.writeFileSync(outPath, JSON.stringify(result, null, 2), 'utf8');
   console.log('Written:', outPath);
+
+  // FxEs履歴に追記（fxes-history.json）
+  if (result.fxes && result.fxes.date && result.fxes.time) {
+    try {
+      const histPath = path.join(__dirname, '..', 'docs', 'fxes-history.json');
+      const [y, m, d] = result.fxes.date.split('/').map(Number);
+      const [hh, mm] = result.fxes.time.split(':').map(Number);
+      const jstMs = Date.UTC(y, m - 1, d, hh, mm) - 9 * 60 * 60 * 1000;
+      const ts = new Date(jstMs).toISOString().replace(/\.\d{3}Z$/, 'Z');
+
+      let history = [];
+      if (fs.existsSync(histPath)) {
+        history = JSON.parse(fs.readFileSync(histPath, 'utf8'));
+      }
+
+      // 重複チェック（同一タイムスタンプは追加しない）
+      if (!history.some(r => r.ts === ts)) {
+        history.push({
+          ts,
+          ok: result.fxes.ok ?? '--',
+          yg: result.fxes.yg ?? '--',
+          to: result.fxes.to ?? '--',
+          wk: result.fxes.wk ?? '--'
+        });
+        history.sort((a, b) => a.ts.localeCompare(b.ts));
+        fs.writeFileSync(histPath, JSON.stringify(history, null, 2), 'utf8');
+        console.log('FxEs history appended:', ts);
+      } else {
+        console.log('FxEs history: duplicate, skipped:', ts);
+      }
+    } catch (e) {
+      console.error('FxEs history error:', e.message);
+    }
+  }
 }
 
 main().catch(err => { console.error(err); process.exit(1); });
