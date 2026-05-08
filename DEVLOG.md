@@ -128,3 +128,19 @@
   - `?action=farewell-new`（GET）：非WL登録者への一斉終了通知エンドポイント（使用後は残置、再実行可）
 - **一斉送信実施**：非WL登録者12名に送信 → ok:true 5名、ok:false 7名（ブロック/退会済み）
 - **デプロイ**：Version ID `961612a2`
+
+---
+
+## 2026-05-08 — Discord セッション
+
+### FxEs履歴蓄積を追加
+- `docs/fxes-history.json` 新規作成：git履歴448件（4/9〜現在）からFxEsデータを抽出・保存
+  - 形式：`[{ts, ok, yg, to, wk}, ...]`（UTCタイムスタンプ、昇順）
+  - ファイルサイズ：約49KB
+- `scripts/fetch-data.js` 改修：15分更新ごとにfxes-history.jsonへ追記
+  - 重複タイムスタンプはスキップ
+- `scripts/extract-fxes-history.js` 追加：初回抽出スクリプト（実行済み、以後不要）
+- OPERATION LOGにCB×Es分析カードを追加（ログ/検索タブ末尾）
+  - 年月セレクター → その月のCB交信一覧 × FxEs4地点
+  - FxEs 9.0以上を赤字強調
+  - 「テスト中」バッジ付き
