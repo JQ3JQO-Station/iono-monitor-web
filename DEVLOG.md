@@ -144,3 +144,15 @@
   - 年月セレクター → その月のCB交信一覧 × FxEs4地点
   - FxEs 9.0以上を赤字強調
   - 「テスト中」バッジ付き
+
+### NICTアーカイブデータ取り込み（2025-2026全局）
+- NICTアーカイブから4局×2年分を取り込み → `docs/fxes-history.json` を大幅拡充
+  - 取り込み前：448件（4/9〜現在、gitのみ）
+  - 取り込み後：**70,080件**（2025/1/1〜2026/12/31）
+  - 対象局：OK426（沖縄）・YG431（鹿児島）・TO536（東京）・WK546（北海道）
+  - ファイルサイズ：5.0MB（コンパクトJSON形式）
+  - データソース：https://wdc.nict.go.jp/Ionosphere/archive/observation-history/
+- `scripts/merge-nict-history.js`：NICTアーカイブマージスクリプトを追加
+- `scripts/fetch-data.js`：fxes-history.json書き込みをコンパクト形式に変更
+- 2025年7月のEsイベント（9MHz超）1,294件を収録
+- 昨年5月からのQSO履歴とFxEsの突き合わせが可能になった
