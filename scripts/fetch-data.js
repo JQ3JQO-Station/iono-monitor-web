@@ -236,7 +236,7 @@ async function main() {
           wk: result.fxes.wk ?? '--'
         });
         history.sort((a, b) => a.ts.localeCompare(b.ts));
-        fs.writeFileSync(histPath, JSON.stringify(history, null, 2), 'utf8');
+        fs.writeFileSync(histPath, JSON.stringify(history), 'utf8');
         console.log('FxEs history appended:', ts);
       } else {
         console.log('FxEs history: duplicate, skipped:', ts);
