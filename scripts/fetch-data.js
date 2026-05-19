@@ -226,21 +226,24 @@ async function main() {
         history = JSON.parse(fs.readFileSync(histPath, 'utf8'));
       }
 
-      // 重複チェック（同一タイムスタンプは追加しない）
-      if (!history.some(r => r.ts === ts)) {
-        history.push({
-          ts,
-          ok: result.fxes.ok ?? '--',
-          yg: result.fxes.yg ?? '--',
-          to: result.fxes.to ?? '--',
-          wk: result.fxes.wk ?? '--'
-        });
-        history.sort((a, b) => a.ts.localeCompare(b.ts));
-        fs.writeFileSync(histPath, JSON.stringify(history), 'utf8');
-        console.log('FxEs history appended:', ts);
+      // 同一タイムスタンプが既にあれば上書き、なければ追加
+      const existIdx = history.findIndex(r => r.ts === ts);
+      const newEntry = {
+        ts,
+        ok: result.fxes.ok ?? '--',
+        yg: result.fxes.yg ?? '--',
+        to: result.fxes.to ?? '--',
+        wk: result.fxes.wk ?? '--'
+      };
+      if (existIdx >= 0) {
+        history[existIdx] = newEntry;
+        console.log('FxEs history updated:', ts);
       } else {
-        console.log('FxEs history: duplicate, skipped:', ts);
+        history.push(newEntry);
+        history.sort((a, b) => a.ts.localeCompare(b.ts));
+        console.log('FxEs history appended:', ts);
       }
+      fs.writeFileSync(histPath, JSON.stringify(history), 'utf8');
     } catch (e) {
       console.error('FxEs history error:', e.message);
     }
