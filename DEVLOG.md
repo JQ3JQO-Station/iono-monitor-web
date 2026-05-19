@@ -156,3 +156,16 @@
 - `scripts/fetch-data.js`：fxes-history.json書き込みをコンパクト形式に変更
 - 2025年7月のEsイベント（9MHz超）1,294件を収録
 - 昨年5月からのQSO履歴とFxEsの突き合わせが可能になった
+
+---
+
+## 2026-05-19 — Discord セッション
+
+### fxes-history.json 自動更新バグ修正
+- **症状**：5/18以降のFxEsデータがCB×Es分析に表示されない
+- **原因①**：`.github/workflows/fetch-data.yml` の `git add` に `fxes-history.json` が含まれていなかった
+- **原因②**：2026アーカイブ取り込み時に12月末まで全て`--`の空行が入り込み、fetch-data.jsが「重複タイムスタンプ」としてスキップ
+- **修正①**：fetch-data.yml に `docs/fxes-history.json` を追加（根本修正）
+- **修正②**：fetch-data.js: 重複タイムスタンプでも値を上書きするよう変更
+- **補完**：2026アーカイブ最新版で5/9〜5/18の欠落データを補完（47,560件）
+- 次回GitHub Actions実行から5/19以降も自動蓄積される
