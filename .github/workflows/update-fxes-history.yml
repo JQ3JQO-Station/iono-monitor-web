@@ -1,0 +1,43 @@
+name: Update FxEs History
+
+on:
+  schedule:
+    - cron: '30 16 * * *'  # 毎日 01:30 JST (16:30 UTC)
+  workflow_dispatch:
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Download NICT archives
+        run: |
+          YEAR_PREV=$(date -u -d '1 year ago' +%Y)
+          YEAR_CURR=$(date -u +%Y)
+          BASE="https://wdc.nict.go.jp/Ionosphere/archive/observation-history"
+          for YEAR in $YEAR_PREV $YEAR_CURR; do
+            for STA in OK426 YG431 TO536 WK546; do
+              curl -fsSL "${BASE}/factor-auto-${STA}-${YEAR}.sjis.txt" -o "/tmp/${STA}-${YEAR}.txt" && \
+                echo "Downloaded ${STA}-${YEAR}" || echo "Skipped ${STA}-${YEAR} (not available)"
+            done
+          done
+
+      - name: Merge into fxes-history.json
+        run: node scripts/merge-nict-history.js
+
+      - name: Commit & push
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add docs/fxes-history.json
+          git diff --cached --quiet && echo "No changes" || (git commit -m "fxes-history: daily update $(date -u +%Y-%m-%d)" && git push)

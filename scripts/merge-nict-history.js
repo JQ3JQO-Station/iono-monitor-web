@@ -13,17 +13,25 @@ const STATION_MAP = {
   'WK546': 'wk',
 };
 
-// ファイルリスト（年→局→ファイルパス）
-const FILES = [
-  { station: 'OK426', key: 'ok', path: '/tmp/OK426-2025.txt' },
-  { station: 'YG431', key: 'yg', path: '/tmp/YG431-2025.txt' },
-  { station: 'TO536', key: 'to', path: '/tmp/TO536-2025.txt' },
-  { station: 'WK546', key: 'wk', path: '/tmp/WK546-2025.txt' },
-  { station: 'OK426', key: 'ok', path: '/tmp/OK426-2026.txt' },
-  { station: 'YG431', key: 'yg', path: '/tmp/YG431-2026.txt' },
-  { station: 'TO536', key: 'to', path: '/tmp/TO536-2026.txt' },
-  { station: 'WK546', key: 'wk', path: '/tmp/WK546-2026.txt' },
+// ファイルリスト（/tmp/ に存在するファイルを自動検出）
+const STATIONS = [
+  { station: 'OK426', key: 'ok' },
+  { station: 'YG431', key: 'yg' },
+  { station: 'TO536', key: 'to' },
+  { station: 'WK546', key: 'wk' },
 ];
+const currYear = new Date().getFullYear();
+const FILES = [];
+for (let y = currYear - 1; y <= currYear; y++) {
+  for (const s of STATIONS) {
+    const p = `/tmp/${s.station}-${y}.txt`;
+    if (fs.existsSync(p)) FILES.push({ ...s, path: p });
+  }
+}
+if (FILES.length === 0) {
+  console.error('処理対象ファイルが /tmp/ に見つかりません');
+  process.exit(1);
+}
 
 // タイムスタンプパース（JST → UTC ISO）
 function parseTs(tsStr) {
@@ -113,11 +121,12 @@ async function main() {
         added++;
       }
       const rec = merged.get(ts);
-      if (rec[key] === '--' || rec[key] === undefined) {
-        rec[key] = fxes;
-        if (added === 0) updated++;
+      // NICTアーカイブ値で常に上書き（毎日最新版を取得するため）
+      if (fxes !== '--') {
+        if (rec[key] !== fxes) { rec[key] = fxes; updated++; }
+      } else if (rec[key] === undefined) {
+        rec[key] = '--';
       }
-      // 既存値がある場合はNICTアーカイブで上書きしない（git履歴を優先）
     }
     console.log(`${map.size} 件読込、${added} 件追加、${updated} 件補完`);
   }
@@ -126,7 +135,9 @@ async function main() {
   const result = [...merged.values()]
     .sort((a, b) => a.ts.localeCompare(b.ts));
 
-  fs.writeFileSync(histPath, JSON.stringify(result, null, 2), 'utf8');
+  // 全--エントリを除外してコンパクトJSONで保存
+  const trimmed = result.filter(r => !(r.ok === '--' && r.yg === '--' && r.to === '--' && r.wk === '--'));
+  fs.writeFileSync(histPath, JSON.stringify(trimmed));
 
   // 統計
   const total = result.length;
