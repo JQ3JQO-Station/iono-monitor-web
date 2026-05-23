@@ -169,3 +169,17 @@
 - **修正②**：fetch-data.js: 重複タイムスタンプでも値を上書きするよう変更
 - **補完**：2026アーカイブ最新版で5/9〜5/18の欠落データを補完（47,560件）
 - 次回GitHub Actions実行から5/19以降も自動蓄積される
+
+---
+
+## 2026-05-23 — Discord セッション
+
+### GitHub Actionsの失敗メール対応
+- **症状**：5/19以降、15分ジョブが高頻度で失敗しメール通知が届くようになった
+- **原因**：5/19の修正でfxes-history.jsonを15分ジョブに追加したが、複数ジョブ同時実行で毎回push競合が発生
+- **修正**：fxes-history.jsonの更新を日次専用ジョブに分離
+  - `fetch-data.yml`：fxes-history.jsonのgit addを削除（data.jsonのみ）
+  - `update-fxes-history.yml`：新規作成（毎日01:30 JST / 16:30 UTC）
+    - NICTアーカイブ（前年・当年の4局分）を再ダウンロード
+    - `merge-nict-history.js` を実行してfxes-history.jsonを更新・コミット
+  - `merge-nict-history.js`：年自動検出・全--除外・NICTデータで上書き対応
