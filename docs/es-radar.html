@@ -285,8 +285,8 @@
         // angleDeg: round head points toward Es concentration center
         const angleDeg = (centerLat >= s.lat) ? 0 : 180;
 
-        const r   = v < 2 ? 0  : Math.max(11, Math.min(38, v * 1.5));
-        const ext = r * 0.5;
+        const r   = v < 2 ? 0  : Math.min(44, 12 + v * 1.8);
+        const ext = r * 0.55;
 
         const g = svgEl('g', {});
 
