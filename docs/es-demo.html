@@ -108,11 +108,9 @@
       animation: sector-pulse 2s ease-in-out infinite;
     }
 
-    /* persistent Es cloud circles */
+    /* anime-style cloud shapes */
     .es-cloud-item {
       transition: transform 0.9s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.9s ease;
-      transform-box: fill-box;
-      transform-origin: center;
     }
     /* centroid group smooth movement */
     #centroid-group {
@@ -191,11 +189,8 @@
           <filter id="sector-blur" x="-30%" y="-30%" width="160%" height="160%">
             <feGaussianBlur stdDeviation="10"/>
           </filter>
-          <filter id="cloud-soft" x="-60%" y="-60%" width="220%" height="220%">
-            <feGaussianBlur stdDeviation="10"/>
-          </filter>
-          <filter id="cloud-core" x="-40%" y="-40%" width="180%" height="180%">
-            <feGaussianBlur stdDeviation="4"/>
+          <filter id="cloud-shadow" x="-30%" y="-30%" width="160%" height="160%">
+            <feDropShadow dx="0" dy="3" stdDeviation="5" flood-color="rgba(0,0,0,0.25)"/>
           </filter>
         </defs>
         <!-- Japan islands -->
@@ -217,18 +212,29 @@
         <!-- Ring labels -->
         <text x="216" y="232" font-size="8" fill="#6070a8" opacity="0.9" font-weight="bold">近すぎ（〜450km）</text>
 
-        <!-- Persistent cloud circles (Bb design — animate in place via CSS) -->
+        <!-- Anime-style cloud shapes (Bb design — scale/color animate via CSS) -->
+        <!-- Cloud path centered at (0,0); each <g> positioned at station via transform -->
         <g id="es-cloud-layer">
-          <!-- Halo layer (blurry outer glow) -->
-          <circle id="cld-ok"    cx="146.5" cy="117.7" r="90" fill="#0090c8" opacity="0" class="es-cloud-item" filter="url(#cloud-soft)"/>
-          <circle id="cld-yg"    cx="73.9"  cy="385.0" r="90" fill="#28a838" opacity="0" class="es-cloud-item" filter="url(#cloud-soft)"/>
-          <circle id="cld-to"    cx="329.9" cy="289.8" r="90" fill="#28a838" opacity="0" class="es-cloud-item" filter="url(#cloud-soft)"/>
-          <circle id="cld-wk"    cx="333.4" cy="51.8"  r="90" fill="#0090c8" opacity="0" class="es-cloud-item" filter="url(#cloud-soft)"/>
-          <!-- Core layer (sharper center for visibility) -->
-          <circle id="cld-ok-c"  cx="146.5" cy="117.7" r="50" fill="#0090c8" opacity="0" class="es-cloud-item" filter="url(#cloud-core)"/>
-          <circle id="cld-yg-c"  cx="73.9"  cy="385.0" r="50" fill="#28a838" opacity="0" class="es-cloud-item" filter="url(#cloud-core)"/>
-          <circle id="cld-to-c"  cx="329.9" cy="289.8" r="50" fill="#28a838" opacity="0" class="es-cloud-item" filter="url(#cloud-core)"/>
-          <circle id="cld-wk-c"  cx="333.4" cy="51.8"  r="50" fill="#0090c8" opacity="0" class="es-cloud-item" filter="url(#cloud-core)"/>
+          <g id="cld-ok" class="es-cloud-item" filter="url(#cloud-shadow)"
+             style="opacity:0; transform:translate(146.5px,117.7px) scale(0.1)">
+            <path class="cloud-fill" fill="#0090c8" stroke="#fff" stroke-width="2.5" stroke-linejoin="round"
+              d="M -44,22 C -62,22 -64,4 -50,-2 C -54,-26 -28,-38 -12,-22 C -6,-46 20,-46 28,-22 C 42,-38 66,-20 56,-2 C 70,4 68,22 48,22 Z"/>
+          </g>
+          <g id="cld-yg" class="es-cloud-item" filter="url(#cloud-shadow)"
+             style="opacity:0; transform:translate(73.9px,385.0px) scale(0.1)">
+            <path class="cloud-fill" fill="#28a838" stroke="#fff" stroke-width="2.5" stroke-linejoin="round"
+              d="M -44,22 C -62,22 -64,4 -50,-2 C -54,-26 -28,-38 -12,-22 C -6,-46 20,-46 28,-22 C 42,-38 66,-20 56,-2 C 70,4 68,22 48,22 Z"/>
+          </g>
+          <g id="cld-to" class="es-cloud-item" filter="url(#cloud-shadow)"
+             style="opacity:0; transform:translate(329.9px,289.8px) scale(0.1)">
+            <path class="cloud-fill" fill="#28a838" stroke="#fff" stroke-width="2.5" stroke-linejoin="round"
+              d="M -44,22 C -62,22 -64,4 -50,-2 C -54,-26 -28,-38 -12,-22 C -6,-46 20,-46 28,-22 C 42,-38 66,-20 56,-2 C 70,4 68,22 48,22 Z"/>
+          </g>
+          <g id="cld-wk" class="es-cloud-item" filter="url(#cloud-shadow)"
+             style="opacity:0; transform:translate(333.4px,51.8px) scale(0.1)">
+            <path class="cloud-fill" fill="#0090c8" stroke="#fff" stroke-width="2.5" stroke-linejoin="round"
+              d="M -44,22 C -62,22 -64,4 -50,-2 C -54,-26 -28,-38 -12,-22 C -6,-46 20,-46 28,-22 C 42,-38 66,-20 56,-2 C 70,4 68,22 48,22 Z"/>
+          </g>
         </g>
         <!-- Halo rings around active stations (rendered by JS) -->
         <g id="stn-halos"></g>
@@ -433,26 +439,19 @@
       halosGroup.innerHTML   = '';
       sectorsGroup.innerHTML = '';
 
-      // --- Bb: Persistent cloud circles — update scale/opacity/color via CSS transition ---
+      // --- Bb: Anime cloud shapes — update scale/opacity/color via CSS transition ---
       for (const r of REGIONS) {
         const k   = r.station;
         const v   = vals[k];
         const col = esColorCloud(v);
         const active = col && v >= 3;
-        // Halo (blurry outer)
-        const cld   = document.getElementById('cld-' + k);
-        const scale = active ? Math.min(2.2, 0.7 + v * 0.15) : 0.05;
-        const op    = active ? Math.min(0.75, 0.30 + v * 0.07) : 0;
-        cld.setAttribute('fill', col || '#a0b0c8');
-        cld.style.transform = `scale(${scale})`;
+        const cld = document.getElementById('cld-' + k);
+        const s   = STN_SVG[k];
+        const scale = active ? Math.min(1.6, 0.40 + v * 0.095) : 0.05;
+        const op    = active ? Math.min(0.92, 0.70 + v * 0.02)  : 0;
+        cld.style.transform = `translate(${s.x}px, ${s.y}px) scale(${scale})`;
         cld.style.opacity   = op;
-        // Core (sharper center)
-        const cldC   = document.getElementById('cld-' + k + '-c');
-        const scaleC = active ? Math.min(2.0, 0.6 + v * 0.13) : 0.05;
-        const opC    = active ? Math.min(0.70, 0.25 + v * 0.065) : 0;
-        cldC.setAttribute('fill', col || '#a0b0c8');
-        cldC.style.transform = `scale(${scaleC})`;
-        cldC.style.opacity   = opC;
+        if (active) cld.querySelector('.cloud-fill').setAttribute('fill', col);
       }
 
       for (const r of REGIONS) {
