@@ -108,6 +108,26 @@
       animation: sector-pulse 2s ease-in-out infinite;
     }
 
+    /* persistent Es cloud circles */
+    .es-cloud-item {
+      transition: transform 0.9s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.9s ease;
+      transform-box: fill-box;
+      transform-origin: center;
+    }
+    /* centroid group smooth movement */
+    #centroid-group {
+      transition: transform 1.0s cubic-bezier(0.25, 0.8, 0.25, 1), opacity 0.6s ease;
+    }
+    /* centroid spawn flash for new formation */
+    @keyframes centroid-spawn {
+      0%   { transform: scale(0.3); opacity: 0; }
+      55%  { transform: scale(2.2); opacity: 1; }
+      100% { transform: scale(1.0); opacity: 1; }
+    }
+    .centroid-spawn {
+      animation: centroid-spawn 0.7s cubic-bezier(0.2, 0.8, 0.3, 1) forwards;
+    }
+
   </style>
 </head>
 <body>
@@ -171,6 +191,12 @@
           <filter id="sector-blur" x="-30%" y="-30%" width="160%" height="160%">
             <feGaussianBlur stdDeviation="10"/>
           </filter>
+          <filter id="cloud-soft" x="-60%" y="-60%" width="220%" height="220%">
+            <feGaussianBlur stdDeviation="10"/>
+          </filter>
+          <filter id="cloud-core" x="-40%" y="-40%" width="180%" height="180%">
+            <feGaussianBlur stdDeviation="4"/>
+          </filter>
         </defs>
         <!-- Japan islands -->
         <path class="island" d="M124.91,55.12l-7.07-7.07c-2.06-2.06-5.39-2.06-7.45,0l-13.85,13.85c-1.92,1.92-5,2.07-7.09.33l-1.7-1.41c-2.24-1.86-5.56-1.55-7.42.69l-1.73,2.09c-1.86,2.24-1.55,5.56.69,7.42h0c2.39,1.98,2.55,5.59.36,7.78l-18.41,18.41v21.71c0,2.91,2.36,5.27,5.27,5.27h6.94c2.91,0,5.27-2.36,5.27-5.27v-7.97c0-1.4.56-2.74,1.54-3.73l44.65-44.65c2.06-2.06,2.06-5.39,0-7.45Z"/>
@@ -191,8 +217,19 @@
         <!-- Ring labels -->
         <text x="216" y="232" font-size="8" fill="#6070a8" opacity="0.9" font-weight="bold">近すぎ（〜450km）</text>
 
-        <!-- Es cloud coverage (weather-radar style, rendered by JS) -->
-        <g id="es-clouds"></g>
+        <!-- Persistent cloud circles (Bb design — animate in place via CSS) -->
+        <g id="es-cloud-layer">
+          <!-- Halo layer (blurry outer glow) -->
+          <circle id="cld-ok"    cx="146.5" cy="117.7" r="90" fill="#0090c8" opacity="0" class="es-cloud-item" filter="url(#cloud-soft)"/>
+          <circle id="cld-yg"    cx="73.9"  cy="385.0" r="90" fill="#28a838" opacity="0" class="es-cloud-item" filter="url(#cloud-soft)"/>
+          <circle id="cld-to"    cx="329.9" cy="289.8" r="90" fill="#28a838" opacity="0" class="es-cloud-item" filter="url(#cloud-soft)"/>
+          <circle id="cld-wk"    cx="333.4" cy="51.8"  r="90" fill="#0090c8" opacity="0" class="es-cloud-item" filter="url(#cloud-soft)"/>
+          <!-- Core layer (sharper center for visibility) -->
+          <circle id="cld-ok-c"  cx="146.5" cy="117.7" r="50" fill="#0090c8" opacity="0" class="es-cloud-item" filter="url(#cloud-core)"/>
+          <circle id="cld-yg-c"  cx="73.9"  cy="385.0" r="50" fill="#28a838" opacity="0" class="es-cloud-item" filter="url(#cloud-core)"/>
+          <circle id="cld-to-c"  cx="329.9" cy="289.8" r="50" fill="#28a838" opacity="0" class="es-cloud-item" filter="url(#cloud-core)"/>
+          <circle id="cld-wk-c"  cx="333.4" cy="51.8"  r="50" fill="#0090c8" opacity="0" class="es-cloud-item" filter="url(#cloud-core)"/>
+        </g>
         <!-- Halo rings around active stations (rendered by JS) -->
         <g id="stn-halos"></g>
 
@@ -215,6 +252,14 @@
         <text x="80"  y="390" font-size="9" fill="#6070a0" id="smhz-yg" font-weight="bold" stroke="rgba(255,255,255,0.85)" stroke-width="3" paint-order="stroke"></text>
         <text x="335" y="296" font-size="9" fill="#6070a0" id="smhz-to" font-weight="bold" stroke="rgba(255,255,255,0.85)" stroke-width="3" paint-order="stroke"></text>
         <text x="338" y="58"  font-size="9" fill="#6070a0" id="smhz-wk" font-weight="bold" stroke="rgba(255,255,255,0.85)" stroke-width="3" paint-order="stroke"></text>
+
+        <!-- Es centroid drifting marker -->
+        <g id="centroid-group" style="opacity:0; transform:translate(209px,311px)">
+          <circle r="18" fill="rgba(255,255,230,0.18)" filter="url(#stn-glow)"/>
+          <circle r="8"  fill="rgba(255,255,200,0.90)"/>
+          <line x1="-22" y1="0" x2="22" y2="0" stroke="rgba(255,255,200,0.7)" stroke-width="2"/>
+          <line x1="0" y1="-22" x2="0" y2="22" stroke="rgba(255,255,200,0.7)" stroke-width="2"/>
+        </g>
 
         <!-- Osaka crosshair marker -->
         <line x1="203" y1="311" x2="215" y2="311" stroke="#1a3050" stroke-width="2.2"/>
@@ -366,50 +411,48 @@
       return '#c02020';
     }
 
+    // Centroid position tracking
+    let prevCentroid = null;
+
+    function calcCentroidSVG(vals) {
+      let wx = 0, wy = 0, wsum = 0;
+      for (const r of REGIONS) {
+        const v = Math.max(0, vals[r.station]);
+        if (v >= 3) {
+          const s = STN_SVG[r.station];
+          wx += s.x * v; wy += s.y * v; wsum += v;
+        }
+      }
+      return wsum > 0 ? { x: wx / wsum, y: wy / wsum } : null;
+    }
+
     function renderMap(vals) {
       // Clear dynamic groups
       const halosGroup   = document.getElementById('stn-halos');
-      const cloudsGroup  = document.getElementById('es-clouds');
       const sectorsGroup = document.getElementById('stn-sectors');
       halosGroup.innerHTML   = '';
-      cloudsGroup.innerHTML  = '';
       sectorsGroup.innerHTML = '';
 
-      // Remove old radial gradient defs
-      const svgDefs = document.querySelector('#es-map defs');
-      svgDefs.querySelectorAll('[id^="cg-"]').forEach(el => el.remove());
-
-      // --- Weather-radar clouds ---
+      // --- Bb: Persistent cloud circles — update scale/opacity/color via CSS transition ---
       for (const r of REGIONS) {
         const k   = r.station;
         const v   = vals[k];
-        const s   = STN_SVG[k];
         const col = esColorCloud(v);
-        if (!col || v < 3) continue;
-        const radius = Math.min(110, 35 + v * 6);
-        const gradId = 'cg-' + k;
-        const grad = document.createElementNS(SVG_NS, 'radialGradient');
-        grad.setAttribute('id', gradId);
-        grad.setAttribute('cx', '50%'); grad.setAttribute('cy', '50%');
-        grad.setAttribute('r',  '50%');
-        const stops = [
-          { offset:'0%',   color: col, opacity: Math.min(0.75, 0.35 + v * 0.04) },
-          { offset:'55%',  color: col, opacity: Math.min(0.45, 0.15 + v * 0.025) },
-          { offset:'100%', color: col, opacity: 0 },
-        ];
-        stops.forEach(({ offset, color, opacity }) => {
-          const stop = document.createElementNS(SVG_NS, 'stop');
-          stop.setAttribute('offset', offset);
-          stop.setAttribute('stop-color', color);
-          stop.setAttribute('stop-opacity', opacity);
-          grad.appendChild(stop);
-        });
-        svgDefs.appendChild(grad);
-        const circ = document.createElementNS(SVG_NS, 'circle');
-        circ.setAttribute('cx', s.x); circ.setAttribute('cy', s.y);
-        circ.setAttribute('r',  radius);
-        circ.setAttribute('fill', `url(#${gradId})`);
-        cloudsGroup.appendChild(circ);
+        const active = col && v >= 3;
+        // Halo (blurry outer)
+        const cld   = document.getElementById('cld-' + k);
+        const scale = active ? Math.min(2.2, 0.7 + v * 0.15) : 0.05;
+        const op    = active ? Math.min(0.75, 0.30 + v * 0.07) : 0;
+        cld.setAttribute('fill', col || '#a0b0c8');
+        cld.style.transform = `scale(${scale})`;
+        cld.style.opacity   = op;
+        // Core (sharper center)
+        const cldC   = document.getElementById('cld-' + k + '-c');
+        const scaleC = active ? Math.min(2.0, 0.6 + v * 0.13) : 0.05;
+        const opC    = active ? Math.min(0.70, 0.25 + v * 0.065) : 0;
+        cldC.setAttribute('fill', col || '#a0b0c8');
+        cldC.style.transform = `scale(${scaleC})`;
+        cldC.style.opacity   = opC;
       }
 
       for (const r of REGIONS) {
@@ -476,6 +519,37 @@
             sectorsGroup.appendChild(secSharp);
           }
         }
+      }
+
+      // --- Centroid marker: drifts for movement, flashes for new formation ---
+      const cg   = document.getElementById('centroid-group');
+      const cent = calcCentroidSVG(vals);
+      if (cent) {
+        const jumpDist = prevCentroid
+          ? Math.hypot(cent.x - prevCentroid.x, cent.y - prevCentroid.y)
+          : 999;
+        if (jumpDist > 35) {
+          // Sudden jump: instant teleport + spawn flash
+          cg.style.transition = 'none';
+          cg.style.transform  = `translate(${cent.x}px, ${cent.y}px)`;
+          cg.style.opacity    = '1';
+          void cg.offsetWidth; // force reflow
+          cg.classList.remove('centroid-spawn');
+          void cg.offsetWidth;
+          cg.classList.add('centroid-spawn');
+          // Restore transition after flash
+          setTimeout(() => cg.style.transition = '', 50);
+        } else {
+          // Gradual: smooth CSS transition
+          cg.style.transition = '';
+          cg.style.transform  = `translate(${cent.x}px, ${cent.y}px)`;
+          cg.style.opacity    = '1';
+          cg.classList.remove('centroid-spawn');
+        }
+        prevCentroid = cent;
+      } else {
+        cg.style.opacity = '0';
+        prevCentroid = null;
       }
     }
 
