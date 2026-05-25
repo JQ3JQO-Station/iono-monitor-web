@@ -130,7 +130,9 @@
         <!-- 北海道 -->
         <path class="island" d="M357.94,2h56.11c4.77,0,8.64,3.87,8.64,8.64v83.23c0,4.77-3.87,8.64-8.64,8.64h-75.98c-2.24,0-4.4.87-6.01,2.43l-3.7,3.59c-1.61,1.56-3.76,2.43-6.01,2.43h-15.74c-4.77,0-8.64-3.87-8.64-8.64V10.64c0-4.77,3.87-8.64,8.64-8.64h51.33Z"/>
 
-        <!-- Teardrops rendered by JS -->
+        <!-- Es cloud glow (rendered by JS, screen-blend so overlapping regions merge) -->
+        <g id="es-clouds" style="mix-blend-mode:screen"></g>
+        <!-- Teardrop direction markers (rendered by JS) -->
         <g id="teardrops"></g>
       </svg>
     </div>
@@ -263,6 +265,59 @@
       return `M ${tip} C ${c1a} ${c1b} ${right} C ${c2a} ${c2b} ${top} C ${c3a} ${c3b} ${left} C ${c4a} ${c4b} ${tip} Z`;
     }
 
+    // ── Es cloud glow ─────────────────────────────────────────
+    // Draw a soft radial-gradient "cloud" at each active station.
+    // screen blend-mode lets overlapping glows merge naturally,
+    // giving weather-radar-like coverage between stations.
+    function renderClouds(fxes) {
+      const group = document.getElementById('es-clouds');
+      group.innerHTML = '';
+
+      // Remove old cloud gradients from <defs>
+      const svgRoot = document.getElementById('es-svg');
+      const defs = svgRoot.querySelector('defs');
+      defs.querySelectorAll('[id^="cg-"]').forEach(el => el.remove());
+
+      const vals = {};
+      for (const s of STATIONS) vals[s.key] = fxVal(fxes[s.key]);
+
+      for (const s of STATIONS) {
+        const v = vals[s.key];
+        if (v < 2) continue;
+
+        const radius  = Math.min(180, 40 + v * 5.5);
+        const color   = esColor(v);
+        const peakOp  = Math.min(0.80, 0.35 + v * 0.022);
+
+        // Radial gradient: bright core → transparent edge
+        const gradId = `cg-${s.key}`;
+        const grad = document.createElementNS('http://www.w3.org/2000/svg', 'radialGradient');
+        grad.setAttribute('id', gradId);
+        grad.setAttribute('cx', s.x);
+        grad.setAttribute('cy', s.y);
+        grad.setAttribute('r', radius);
+        grad.setAttribute('gradientUnits', 'userSpaceOnUse');
+
+        [[0, peakOp], [0.45, peakOp * 0.45], [0.75, peakOp * 0.12], [1, 0]].forEach(([off, op]) => {
+          const stop = document.createElementNS('http://www.w3.org/2000/svg', 'stop');
+          stop.setAttribute('offset', `${off * 100}%`);
+          stop.setAttribute('stop-color', color);
+          stop.setAttribute('stop-opacity', op);
+          grad.appendChild(stop);
+        });
+        defs.appendChild(grad);
+
+        // Filled circle using the gradient
+        const circ = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+        circ.setAttribute('cx', s.x);
+        circ.setAttribute('cy', s.y);
+        circ.setAttribute('r', radius);
+        circ.setAttribute('fill', `url(#${gradId})`);
+        if (v >= 9) circ.classList.add('es-pulse');
+        group.appendChild(circ);
+      }
+    }
+
     function svgEl(tag, attrs) {
       const el = document.createElementNS('http://www.w3.org/2000/svg', tag);
       for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, v);
@@ -384,6 +439,7 @@
         const data = await res.json();
         const fx = data.fxes;
 
+        renderClouds(fx);
         renderMap(fx);
         updateCards(fx);
 
