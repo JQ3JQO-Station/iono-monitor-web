@@ -169,7 +169,11 @@
       <svg id="es-map" viewBox="0 0 424.69 424.87" xmlns="http://www.w3.org/2000/svg">
         <defs>
           <filter id="stn-glow" x="-100%" y="-100%" width="300%" height="300%">
-            <feGaussianBlur stdDeviation="5" result="blur"/>
+            <feGaussianBlur stdDeviation="6" result="blur"/>
+            <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+          </filter>
+          <filter id="line-glow" x="-20%" y="-20%" width="140%" height="140%">
+            <feGaussianBlur stdDeviation="4" result="blur"/>
             <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
           </filter>
         </defs>
@@ -180,24 +184,32 @@
         <path class="island" d="M373.42,157.68v166.51c0,3.35-2.72,6.06-6.06,6.06h-21.09c-3.35,0-6.06,2.72-6.06,6.06v12.93c0,3.35-2.72,6.06-6.06,6.06h-72.33c-3.35,0-6.06,2.72-6.06,6.06v12.93c0,3.35-2.72,6.06-6.06,6.06h-42.77c-3.35,0-6.06-2.72-6.06-6.06v-41.64c0-3.35-2.72-6.06-6.06-6.06h-88.66c-3.35,0-6.06-2.72-6.06-6.06v-51.5c0-3.35,2.72-6.06,6.06-6.06h143.83c3.35,0,6.06-2.72,6.06-6.06v-37.98c0-3.35,2.72-6.06,6.06-6.06h29.26c3.35,0,6.06-2.72,6.06-6.06v-76.55c0-3.35,2.72-6.06,6.06-6.06h63.88c3.35,0,6.06,2.72,6.06,6.06v27.44Z"/>
         <path class="island" d="M357.94,2h56.11c4.77,0,8.64,3.87,8.64,8.64v83.23c0,4.77-3.87,8.64-8.64,8.64h-75.98c-2.24,0-4.4.87-6.01,2.43l-3.7,3.59c-1.61,1.56-3.76,2.43-6.01,2.43h-15.74c-4.77,0-8.64-3.87-8.64-8.64V10.64c0-4.77,3.87-8.64,8.64-8.64h51.33Z"/>
 
-        <!-- Skip zone rings centered on Osaka (209, 311) -->
-        <!-- Inner dead zone: r≈86 (450km) -->
-        <circle cx="209" cy="311" r="86"  fill="rgba(200,215,240,0.10)" stroke="#b0c0dc" stroke-width="1.2" stroke-dasharray="7,4"/>
-        <!-- Outer ring: r≈267 (1400km) -->
-        <circle cx="209" cy="311" r="267" fill="none"                   stroke="#b0c0dc" stroke-width="1.2" stroke-dasharray="7,4"/>
-        <!-- Skip zone fill (donut) -->
-        <circle cx="209" cy="311" r="267" fill="rgba(180,210,240,0.07)"/>
-        <!-- Inner mask (white-out dead zone) -->
-        <circle cx="209" cy="311" r="86"  fill="rgba(240,244,250,0.18)"/>
+        <!-- Skip zone: donut fill between 450km(r=86) and 1400km(r=267) -->
+        <path fill-rule="evenodd"
+              fill="rgba(80,140,220,0.12)"
+              d="M 209,44 A 267,267 0 1,0 209,578 A 267,267 0 1,0 209,44 Z
+                 M 209,225 A 86,86 0 1,0 209,397 A 86,86 0 1,0 209,225 Z"/>
+        <!-- Inner boundary (450km dead zone) -->
+        <circle cx="209" cy="311" r="86"  fill="none" stroke="#7080b8" stroke-width="2.5" stroke-dasharray="9,5" opacity="0.85"/>
+        <!-- Outer boundary (1400km) -->
+        <circle cx="209" cy="311" r="267" fill="none" stroke="#7080b8" stroke-width="2.5" stroke-dasharray="9,5" opacity="0.85"/>
+        <!-- Ring labels -->
+        <text x="216" y="228" font-size="8" fill="#6070a8" opacity="0.9" font-weight="bold">近すぎ</text>
+        <text x="298" y="220" font-size="8" fill="#5068b0" opacity="0.9" font-weight="bold">スキップゾーン</text>
 
         <!-- Halo rings around active stations (rendered by JS) -->
         <g id="stn-halos"></g>
 
-        <!-- Connection lines from Osaka to active stations (rendered by JS) -->
-        <line id="sline-ok" opacity="0" stroke="#aaa" stroke-width="1.5"/>
-        <line id="sline-yg" opacity="0" stroke="#aaa" stroke-width="1.5"/>
-        <line id="sline-to" opacity="0" stroke="#aaa" stroke-width="1.5"/>
-        <line id="sline-wk" opacity="0" stroke="#aaa" stroke-width="1.5"/>
+        <!-- Glow lines (fat+blurred, drawn behind sharp lines) -->
+        <line id="sglow-ok" opacity="0" stroke-width="12" filter="url(#line-glow)"/>
+        <line id="sglow-yg" opacity="0" stroke-width="12" filter="url(#line-glow)"/>
+        <line id="sglow-to" opacity="0" stroke-width="12" filter="url(#line-glow)"/>
+        <line id="sglow-wk" opacity="0" stroke-width="12" filter="url(#line-glow)"/>
+        <!-- Sharp connection lines (rendered by JS) -->
+        <line id="sline-ok" opacity="0" stroke-width="4"/>
+        <line id="sline-yg" opacity="0" stroke-width="4"/>
+        <line id="sline-to" opacity="0" stroke-width="4"/>
+        <line id="sline-wk" opacity="0" stroke-width="4"/>
 
         <!-- Station dots (rendered by JS) -->
         <circle id="sdot-ok" cx="146.5" cy="117.7" r="5" fill="#a0b0c8" opacity="0.5"/>
@@ -221,9 +233,6 @@
         <circle cx="209" cy="311" r="7"   fill="none" stroke="#1a3050" stroke-width="1.2" opacity="0.5"/>
         <text x="215" y="307" font-size="8" fill="#1a3050" font-weight="bold">大阪</text>
 
-        <!-- Ring labels -->
-        <text x="291" y="230" font-size="7" fill="#9090b0" opacity="0.8">450km</text>
-        <text x="440" y="120" font-size="7" fill="#9090b0" opacity="0.8">1400km</text>
       </svg>
     </div>
   </div>
@@ -344,11 +353,11 @@
 
         // --- Station dot ---
         const dot = document.getElementById('sdot-' + k);
-        const dotR = v > 0 ? Math.min(22, 5 + v * 1.5) : 5;
+        const dotR = v > 0 ? Math.min(28, 6 + v * 1.8) : 6;
         dot.setAttribute('r', dotR);
         dot.setAttribute('fill', esColor(v));
-        dot.setAttribute('opacity', v > 0 ? '1' : '0.35');
-        dot.setAttribute('filter', chance ? 'url(#stn-glow)' : '');
+        dot.setAttribute('opacity', v > 0 ? '1' : '0.30');
+        dot.setAttribute('filter', active ? 'url(#stn-glow)' : '');
 
         // --- Pulsing halo (only when active in zone) ---
         if (active) {
@@ -373,24 +382,32 @@
         mhz.textContent = v > 0 ? v.toFixed(1) + ' MHz' : '';
         mhz.setAttribute('fill', esColor(v));
 
-        // --- Connection line from Osaka ---
-        const line = document.getElementById('sline-' + k);
+        // --- Connection line from Osaka (sharp + glow) ---
+        const line  = document.getElementById('sline-' + k);
+        const glow  = document.getElementById('sglow-' + k);
         if (active) {
-          line.setAttribute('x1', OX); line.setAttribute('y1', OY);
-          line.setAttribute('x2', s.x); line.setAttribute('y2', s.y);
-          line.setAttribute('stroke', esColor(v));
-          const sw = v >= 9 ? 4 : v >= 7 ? 3 : 2;
-          line.setAttribute('stroke-width', sw);
-          line.setAttribute('opacity', Math.min(0.9, 0.4 + v * 0.06));
+          const col = esColor(v);
+          const op  = Math.min(0.92, 0.45 + v * 0.055);
+          for (const el of [line, glow]) {
+            el.setAttribute('x1', OX); el.setAttribute('y1', OY);
+            el.setAttribute('x2', s.x); el.setAttribute('y2', s.y);
+            el.setAttribute('stroke', col);
+            el.setAttribute('opacity', op);
+          }
           if (chance) {
+            line.setAttribute('stroke-width', v >= 9 ? '5' : '4');
+            glow.setAttribute('stroke-width', v >= 9 ? '18' : '14');
             line.removeAttribute('stroke-dasharray');
             line.classList.remove('line-march');
           } else {
+            line.setAttribute('stroke-width', '3');
+            glow.setAttribute('stroke-width', '10');
             line.setAttribute('stroke-dasharray', '10 7');
             line.classList.add('line-march');
           }
         } else {
           line.setAttribute('opacity', '0');
+          glow.setAttribute('opacity', '0');
           line.classList.remove('line-march');
         }
       }
