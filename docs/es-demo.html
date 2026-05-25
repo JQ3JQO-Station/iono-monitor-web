@@ -76,6 +76,17 @@
     .status-near    { background: #fdf2f2; }
     .status-inactive{ background: #f3f4f6; color: #9ca3af; }
 
+    /* map section */
+    .map-section {
+      background: #fff; border-radius: 12px;
+      box-shadow: 0 1px 4px rgba(0,20,60,0.10);
+      padding: 10px 12px;
+    }
+    .map-title { font-size: 0.58rem; font-weight: 700; color: #8090a8; letter-spacing: .1em; text-transform: uppercase; margin-bottom: 6px; }
+    .map-wrapper { position: relative; width: min(100%, 58vw); aspect-ratio: 1; margin: 0 auto; }
+    .map-wrapper svg { width: 100%; height: 100%; display: block; overflow: visible; }
+    .island { fill: rgba(80,140,70,0.11); stroke: #7aaa60; stroke-width: 2.5px; stroke-linecap: round; stroke-linejoin: round; }
+
     /* narrative */
     #narrative {
       background: #1a3050; color: #e0f0ff;
@@ -132,6 +143,64 @@
     </div>
   </div>
 
+  <!-- map visualization -->
+  <div class="map-section">
+    <div class="map-title">大阪 QTH からの Es スキップマップ</div>
+    <div class="map-wrapper">
+      <svg id="es-map" viewBox="0 0 424.69 424.87" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <filter id="stn-glow" x="-100%" y="-100%" width="300%" height="300%">
+            <feGaussianBlur stdDeviation="5" result="blur"/>
+            <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+          </filter>
+        </defs>
+        <!-- Japan islands -->
+        <path class="island" d="M124.91,55.12l-7.07-7.07c-2.06-2.06-5.39-2.06-7.45,0l-13.85,13.85c-1.92,1.92-5,2.07-7.09.33l-1.7-1.41c-2.24-1.86-5.56-1.55-7.42.69l-1.73,2.09c-1.86,2.24-1.55,5.56.69,7.42h0c2.39,1.98,2.55,5.59.36,7.78l-18.41,18.41v21.71c0,2.91,2.36,5.27,5.27,5.27h6.94c2.91,0,5.27-2.36,5.27-5.27v-7.97c0-1.4.56-2.74,1.54-3.73l44.65-44.65c2.06-2.06,2.06-5.39,0-7.45Z"/>
+        <path class="island" d="M79.63,422.87H27.31c-4.6,0-8.32-3.73-8.32-8.32v-55.3c0-3.51-2.2-6.64-5.5-7.83l-5.98-2.15c-3.3-1.19-5.5-4.32-5.5-7.83v-36.36c0-4.6,3.73-8.32,8.32-8.32h69.31c4.6,0,8.32,3.73,8.32,8.32v109.47c0,4.6-3.73,8.32-8.32,8.32Z"/>
+        <rect class="island" x="100.14" y="338.81" width="87.94" height="42.12" rx="3.75" ry="3.75"/>
+        <path class="island" d="M373.42,157.68v166.51c0,3.35-2.72,6.06-6.06,6.06h-21.09c-3.35,0-6.06,2.72-6.06,6.06v12.93c0,3.35-2.72,6.06-6.06,6.06h-72.33c-3.35,0-6.06,2.72-6.06,6.06v12.93c0,3.35-2.72,6.06-6.06,6.06h-42.77c-3.35,0-6.06-2.72-6.06-6.06v-41.64c0-3.35-2.72-6.06-6.06-6.06h-88.66c-3.35,0-6.06-2.72-6.06-6.06v-51.5c0-3.35,2.72-6.06,6.06-6.06h143.83c3.35,0,6.06-2.72,6.06-6.06v-37.98c0-3.35,2.72-6.06,6.06-6.06h29.26c3.35,0,6.06-2.72,6.06-6.06v-76.55c0-3.35,2.72-6.06,6.06-6.06h63.88c3.35,0,6.06,2.72,6.06,6.06v27.44Z"/>
+        <path class="island" d="M357.94,2h56.11c4.77,0,8.64,3.87,8.64,8.64v83.23c0,4.77-3.87,8.64-8.64,8.64h-75.98c-2.24,0-4.4.87-6.01,2.43l-3.7,3.59c-1.61,1.56-3.76,2.43-6.01,2.43h-15.74c-4.77,0-8.64-3.87-8.64-8.64V10.64c0-4.77,3.87-8.64,8.64-8.64h51.33Z"/>
+
+        <!-- Skip zone rings centered on Osaka (209, 311) -->
+        <!-- Inner dead zone: r≈86 (450km) -->
+        <circle cx="209" cy="311" r="86"  fill="rgba(200,215,240,0.10)" stroke="#b0c0dc" stroke-width="1.2" stroke-dasharray="7,4"/>
+        <!-- Outer ring: r≈267 (1400km) -->
+        <circle cx="209" cy="311" r="267" fill="none"                   stroke="#b0c0dc" stroke-width="1.2" stroke-dasharray="7,4"/>
+        <!-- Skip zone fill (donut) -->
+        <circle cx="209" cy="311" r="267" fill="rgba(180,210,240,0.07)"/>
+        <!-- Inner mask (white-out dead zone) -->
+        <circle cx="209" cy="311" r="86"  fill="rgba(240,244,250,0.18)"/>
+
+        <!-- Connection lines from Osaka to active stations (rendered by JS) -->
+        <line id="sline-ok" opacity="0" stroke="#aaa" stroke-width="1.5"/>
+        <line id="sline-yg" opacity="0" stroke="#aaa" stroke-width="1.5"/>
+        <line id="sline-to" opacity="0" stroke="#aaa" stroke-width="1.5"/>
+        <line id="sline-wk" opacity="0" stroke="#aaa" stroke-width="1.5"/>
+
+        <!-- Station dots (rendered by JS) -->
+        <circle id="sdot-ok" cx="146.5" cy="117.7" r="5" fill="#a0b0c8" opacity="0.5"/>
+        <circle id="sdot-yg" cx="73.9"  cy="385.0" r="5" fill="#a0b0c8" opacity="0.5"/>
+        <circle id="sdot-to" cx="329.9" cy="289.8" r="5" fill="#a0b0c8" opacity="0.5"/>
+        <circle id="sdot-wk" cx="333.4" cy="51.8"  r="5" fill="#a0b0c8" opacity="0.5"/>
+
+        <!-- Station labels -->
+        <text x="152" y="114" font-size="8.5" fill="#6070a0" id="slbl-ok">沖縄</text>
+        <text x="80"  y="381" font-size="8.5" fill="#6070a0" id="slbl-yg">鹿児島</text>
+        <text x="335" y="287" font-size="8.5" fill="#6070a0" id="slbl-to">東京</text>
+        <text x="338" y="49"  font-size="8.5" fill="#6070a0" id="slbl-wk">北海道</text>
+
+        <!-- Osaka marker -->
+        <circle cx="209" cy="311" r="4.5" fill="#1a3050"/>
+        <circle cx="209" cy="311" r="7"   fill="none" stroke="#1a3050" stroke-width="1.2" opacity="0.5"/>
+        <text x="215" y="307" font-size="8" fill="#1a3050" font-weight="bold">大阪</text>
+
+        <!-- Ring labels -->
+        <text x="291" y="230" font-size="7" fill="#9090b0" opacity="0.8">450km</text>
+        <text x="440" y="120" font-size="7" fill="#9090b0" opacity="0.8">1400km</text>
+      </svg>
+    </div>
+  </div>
+
   <!-- regional status -->
   <div class="region-section">
     <div class="section-title">大阪からの交信チャンス</div>
@@ -184,6 +253,15 @@
       '鹿児島が11.6MHzに急増！ 今日最大値。東京も7.0MHz、北海道も5.9MHzと全局上昇中。\nEs盛期。九州 ✅✅ 強烈チャンス、北海道方面も 🟠そろそろ！',
     ];
 
+    // Station SVG positions and distances from Osaka
+    const STN_SVG = {
+      ok: { x: 146.5, y: 117.7 },
+      yg: { x:  73.9, y: 385.0 },
+      to: { x: 329.9, y: 289.8 },
+      wk: { x: 333.4, y:  51.8 },
+    };
+    const OX = 209, OY = 311; // Osaka SVG position
+
     function fxVal(v) {
       if (v === null || v === undefined) return 0;
       if (typeof v === 'string') return v === '--' ? 0 : (parseFloat(v) || 0);
@@ -222,6 +300,42 @@
       return { cls:'status-inactive', badge:'─', label:'静穏' };
     }
 
+    function renderMap(vals) {
+      for (const r of REGIONS) {
+        const k  = r.station;
+        const v  = vals[k];
+        const s  = STN_SVG[k];
+        const st = regionStatus(v, r.dist);
+        const inZone = r.dist >= SKIP_MIN && r.dist <= SKIP_MAX;
+
+        // Station dot
+        const dot = document.getElementById('sdot-' + k);
+        const dotR = v > 0 ? Math.min(16, 5 + v * 0.85) : 5;
+        dot.setAttribute('r', dotR);
+        dot.setAttribute('fill', esColor(v));
+        dot.setAttribute('opacity', v > 0 ? '0.9' : '0.4');
+        dot.setAttribute('filter', (inZone && v >= 7) ? 'url(#stn-glow)' : '');
+
+        // Label
+        const lbl = document.getElementById('slbl-' + k);
+        lbl.setAttribute('fill', v >= 5 ? esColor(v) : '#6070a0');
+        lbl.setAttribute('font-weight', v >= 5 ? 'bold' : 'normal');
+
+        // Connection line from Osaka
+        const line = document.getElementById('sline-' + k);
+        if (inZone && v >= 5) {
+          line.setAttribute('x1', OX); line.setAttribute('y1', OY);
+          line.setAttribute('x2', s.x); line.setAttribute('y2', s.y);
+          line.setAttribute('stroke', esColor(v));
+          line.setAttribute('stroke-width', v >= 9 ? '2.5' : v >= 7 ? '2' : '1.5');
+          line.setAttribute('stroke-dasharray', v >= 7 ? '' : '6,4');
+          line.setAttribute('opacity', Math.min(0.8, 0.3 + v * 0.06));
+        } else {
+          line.setAttribute('opacity', '0');
+        }
+      }
+    }
+
     function render(idx) {
       const d = HISTORY[idx];
       const vals = { ok: fxVal(d.ok), yg: fxVal(d.yg), to: fxVal(d.to), wk: fxVal(d.wk) };
@@ -236,6 +350,9 @@
         el.style.color = esColor(v);
         document.getElementById('cell-' + k).style.borderTopColor = esBorderColor(v);
       }
+
+      // Map
+      renderMap(vals);
 
       // Regional list
       const listEl = document.getElementById('region-list');
