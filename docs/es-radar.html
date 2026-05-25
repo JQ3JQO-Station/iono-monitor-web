@@ -7,118 +7,144 @@
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
-      background: #080f1f;
-      color: #b0c8e8;
+      background: #edf1f7;
+      color: #1a2838;
       font-family: -apple-system, 'Helvetica Neue', sans-serif;
       min-height: 100dvh;
-      padding: 10px;
+      padding: 8px;
       display: flex;
       flex-direction: column;
-      gap: 8px;
+      gap: 6px;
     }
+    /* ── header ── */
     header {
       display: flex;
       align-items: center;
       gap: 8px;
-      padding: 4px 0;
+      padding: 2px 0;
     }
-    header h1 { font-size: 1.1rem; font-weight: 700; color: #e0f0ff; }
+    header h1 { font-size: 1rem; font-weight: 700; color: #1a3050; }
     .badge-test {
-      background: #b45309;
-      color: #fde68a;
-      font-size: 0.6rem;
+      background: #d97706;
+      color: #fff;
+      font-size: 0.58rem;
       font-weight: 700;
-      padding: 2px 8px;
+      padding: 2px 7px;
       border-radius: 10px;
-      border: 1px solid #d97706;
     }
-    #obs-time-bar {
-      margin-left: auto;
-      font-size: 0.62rem;
-      color: #405060;
-      text-align: right;
+    #obs-time { margin-left: auto; font-size: 0.62rem; color: #8090a8; }
+
+    /* ── status summary card ── */
+    #status-card {
+      background: #fff;
+      border-radius: 10px;
+      padding: 8px 12px;
+      box-shadow: 0 1px 4px rgba(0,20,60,0.10);
+      font-size: 0.75rem;
+      color: #1a2838;
+      line-height: 1.5;
     }
-    .map-section {
-      background: #0d1a30;
+    #status-headline { font-weight: 700; font-size: 0.85rem; }
+    #status-detail   { color: #6070a0; font-size: 0.65rem; margin-top: 2px; }
+
+    /* ── map ── */
+    .card {
+      background: #fff;
       border-radius: 12px;
-      padding: 6px;
-      border: 1px solid rgba(80,120,180,0.18);
+      box-shadow: 0 1px 4px rgba(0,20,60,0.10);
+      padding: 8px;
     }
+    .card-title { font-size: 0.58rem; font-weight: 700; color: #8090a8; letter-spacing: .1em; text-transform: uppercase; margin-bottom: 6px; }
     .map-wrapper {
       position: relative;
-      width: min(100%, 58dvh);
+      width: min(100%, 56dvh);
       aspect-ratio: 1;
       margin: 0 auto;
     }
     .map-wrapper svg { width: 100%; height: 100%; display: block; }
     .island {
-      fill: rgba(30, 70, 40, 0.5);
-      stroke: #2a6040;
+      fill: rgba(80,140,70,0.12);
+      stroke: #7aaa60;
       stroke-width: 3px;
       stroke-linecap: round;
       stroke-linejoin: round;
     }
-    .station-grid {
+
+    /* ── station cards ── */
+    .stn-grid {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
       gap: 5px;
     }
     .stn-card {
-      background: #0d1a30;
-      border: 1px solid rgba(80,120,180,0.15);
+      background: #fff;
       border-radius: 8px;
+      box-shadow: 0 1px 3px rgba(0,20,60,0.08);
       padding: 8px 4px;
       text-align: center;
     }
-    .stn-label  { font-size: 0.5rem;  color: #506070; margin-bottom: 2px; }
-    .stn-fxes   { font-size: 1.3rem;  font-weight: 800; line-height: 1.1; }
-    .stn-unit   { font-size: 0.42rem; color: #506070; }
-    .stn-ratio  { font-size: 0.55rem; margin-top: 3px; color: #708090; }
-    .stn-trend  { font-size: 0.85rem; margin-top: 1px; }
-    .es-none  { color: #3a5070; }
-    .es-low   { color: #38c0d8; }
-    .es-mid   { color: #70d050; }
-    .es-high  { color: #e8c820; }
-    .es-vhigh { color: #e87018; }
-    .es-peak  { color: #f03030; }
+    .stn-name  { font-size: 0.5rem;  color: #8090a8; margin-bottom: 1px; }
+    .stn-fxes  { font-size: 1.3rem;  font-weight: 800; line-height: 1.1; }
+    .stn-unit  { font-size: 0.42rem; color: #8090a8; }
+    .stn-ratio { font-size: 0.55rem; color: #8090a8; margin-top: 3px; }
+    .stn-trend { font-size: 0.85rem; margin-top: 1px; }
+
+    /* Es intensity — light-theme text colors */
+    .es-none  { color: #a0b0c8; }
+    .es-low   { color: #0098c0; }
+    .es-mid   { color: #2a9030; }
+    .es-high  { color: #b08000; }
+    .es-vhigh { color: #c05000; }
+    .es-peak  { color: #c02020; }
+
+    /* ── legend ── */
     .legend-row {
       display: flex;
       gap: 6px;
       flex-wrap: wrap;
       align-items: center;
       font-size: 0.55rem;
-      color: #506070;
+      color: #8090a8;
     }
     .legend-item { display: flex; align-items: center; gap: 3px; }
-    .ld { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
-    #note-bar { font-size: 0.57rem; color: #405060; text-align: center; line-height: 1.7; }
-    @keyframes es-glow {
+    .ld { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; opacity: 0.75; }
+
+    #note-bar { font-size: 0.55rem; color: #a0b0c8; text-align: center; line-height: 1.7; }
+
+    /* pulse for strong Es */
+    @keyframes es-pulse {
       0%   { opacity: 0.70; }
       100% { opacity: 1.00; }
     }
-    .es-pulse { animation: es-glow 1.3s ease-in-out infinite alternate; }
+    .es-anim { animation: es-pulse 1.3s ease-in-out infinite alternate; }
   </style>
 </head>
 <body>
   <header>
     <h1>Es レーダー</h1>
     <span class="badge-test">テスト版</span>
-    <div id="obs-time-bar">--</div>
+    <span id="obs-time">--</span>
   </header>
 
-  <div class="map-section">
+  <!-- status summary -->
+  <div id="status-card">
+    <div id="status-headline">取得中...</div>
+    <div id="status-detail"></div>
+  </div>
+
+  <!-- map -->
+  <div class="card">
+    <div class="card-title">Es 発生マップ（FxEs）</div>
     <div class="map-wrapper">
       <svg id="es-svg" viewBox="0 0 424.69 424.87" xmlns="http://www.w3.org/2000/svg">
         <defs>
-          <filter id="glow-weak" x="-60%" y="-60%" width="220%" height="220%">
-            <feGaussianBlur stdDeviation="4" result="blur"/>
-            <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
-          </filter>
-          <filter id="glow-strong" x="-60%" y="-60%" width="220%" height="220%">
-            <feGaussianBlur stdDeviation="8" result="blur"/>
+          <!-- glow filters for teardrop markers -->
+          <filter id="glow-td" x="-80%" y="-80%" width="260%" height="260%">
+            <feGaussianBlur stdDeviation="5" result="blur"/>
             <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
           </filter>
         </defs>
+
         <!-- 沖縄（模式） -->
         <path class="island" d="M124.91,55.12l-7.07-7.07c-2.06-2.06-5.39-2.06-7.45,0l-13.85,13.85c-1.92,1.92-5,2.07-7.09.33l-1.7-1.41c-2.24-1.86-5.56-1.55-7.42.69l-1.73,2.09c-1.86,2.24-1.55,5.56.69,7.42h0c2.39,1.98,2.55,5.59.36,7.78l-18.41,18.41v21.71c0,2.91,2.36,5.27,5.27,5.27h6.94c2.91,0,5.27-2.36,5.27-5.27v-7.97c0-1.4.56-2.74,1.54-3.73l44.65-44.65c2.06-2.06,2.06-5.39,0-7.45Z"/>
         <!-- 九州 -->
@@ -130,54 +156,55 @@
         <!-- 北海道 -->
         <path class="island" d="M357.94,2h56.11c4.77,0,8.64,3.87,8.64,8.64v83.23c0,4.77-3.87,8.64-8.64,8.64h-75.98c-2.24,0-4.4.87-6.01,2.43l-3.7,3.59c-1.61,1.56-3.76,2.43-6.01,2.43h-15.74c-4.77,0-8.64-3.87-8.64-8.64V10.64c0-4.77,3.87-8.64,8.64-8.64h51.33Z"/>
 
-        <!-- Es cloud glow (rendered by JS, screen-blend so overlapping regions merge) -->
-        <g id="es-clouds" style="mix-blend-mode:screen"></g>
-        <!-- Teardrop direction markers (rendered by JS) -->
+        <!-- Layer 1: Es cloud coverage (radial gradients, rendered by JS) -->
+        <g id="es-clouds"></g>
+        <!-- Layer 2: Teardrop direction markers (rendered by JS) -->
         <g id="teardrops"></g>
       </svg>
     </div>
+
+    <!-- in-card legend -->
+    <div class="legend-row" style="margin-top:6px">
+      <span>FxEs：</span>
+      <div class="legend-item"><div class="ld" style="background:#00a0c8"></div>2–5</div>
+      <div class="legend-item"><div class="ld" style="background:#30a840"></div>5–7</div>
+      <div class="legend-item"><div class="ld" style="background:#c8a000"></div>7–9</div>
+      <div class="legend-item"><div class="ld" style="background:#d05800"></div>9–14</div>
+      <div class="legend-item"><div class="ld" style="background:#c02020"></div>14+ MHz</div>
+      <span style="margin-left:auto;color:#b0b8c8;font-size:0.5rem">雨粒の丸い側→Es濃度中心方向</span>
+    </div>
   </div>
 
-  <div class="station-grid">
+  <!-- station value cards -->
+  <div class="stn-grid">
     <div class="stn-card">
-      <div class="stn-label">沖縄 OK426</div>
+      <div class="stn-name">沖縄 OK426</div>
       <div class="stn-fxes es-none" id="val-ok">--</div>
-      <div class="stn-unit">MHz FxEs</div>
-      <div class="stn-ratio" id="r27-ok">-- / 27</div>
+      <div class="stn-unit">MHz</div>
+      <div class="stn-ratio" id="r27-ok">--/27</div>
       <div class="stn-trend" id="trend-ok">➡</div>
     </div>
     <div class="stn-card">
-      <div class="stn-label">鹿児島 YG431</div>
+      <div class="stn-name">鹿児島 YG431</div>
       <div class="stn-fxes es-none" id="val-yg">--</div>
-      <div class="stn-unit">MHz FxEs</div>
-      <div class="stn-ratio" id="r27-yg">-- / 27</div>
+      <div class="stn-unit">MHz</div>
+      <div class="stn-ratio" id="r27-yg">--/27</div>
       <div class="stn-trend" id="trend-yg">➡</div>
     </div>
     <div class="stn-card">
-      <div class="stn-label">東京 TO536</div>
+      <div class="stn-name">東京 TO536</div>
       <div class="stn-fxes es-none" id="val-to">--</div>
-      <div class="stn-unit">MHz FxEs</div>
-      <div class="stn-ratio" id="r27-to">-- / 27</div>
+      <div class="stn-unit">MHz</div>
+      <div class="stn-ratio" id="r27-to">--/27</div>
       <div class="stn-trend" id="trend-to">➡</div>
     </div>
     <div class="stn-card">
-      <div class="stn-label">北海道 WK546</div>
+      <div class="stn-name">北海道 WK546</div>
       <div class="stn-fxes es-none" id="val-wk">--</div>
-      <div class="stn-unit">MHz FxEs</div>
-      <div class="stn-ratio" id="r27-wk">-- / 27</div>
+      <div class="stn-unit">MHz</div>
+      <div class="stn-ratio" id="r27-wk">--/27</div>
       <div class="stn-trend" id="trend-wk">➡</div>
     </div>
-  </div>
-
-  <div class="legend-row">
-    <span>FxEs：</span>
-    <div class="legend-item"><div class="ld" style="background:#3a5070"></div>&lt;2</div>
-    <div class="legend-item"><div class="ld" style="background:#38c0d8"></div>2–5</div>
-    <div class="legend-item"><div class="ld" style="background:#70d050"></div>5–7</div>
-    <div class="legend-item"><div class="ld" style="background:#e8c820"></div>7–9</div>
-    <div class="legend-item"><div class="ld" style="background:#e87018"></div>9–14</div>
-    <div class="legend-item"><div class="ld" style="background:#f03030"></div>14+ MHz</div>
-    <span style="margin-left:auto;color:#304050;font-size:0.52rem">丸い側→Es集中方向</span>
   </div>
 
   <div id="note-bar">データ取得中...</div>
@@ -185,8 +212,7 @@
   <script>
     const DATA_URL = 'https://jq3jqo-station.github.io/iono-monitor-web/data.json';
 
-    // Station positions in SVG coordinate space (viewBox 0 0 424.69 424.87)
-    // Derived from monitor.html marker positions (left%, top%)
+    // Station positions: SVG coords derived from monitor.html marker %
     const STATIONS = [
       { key: 'ok', name: '沖縄',   lat: 26.7, x: 146.5, y: 117.7 },
       { key: 'yg', name: '鹿児島', lat: 31.2, x:  73.9, y: 385.0 },
@@ -200,13 +226,14 @@
       return isNaN(n) ? 0 : Math.max(0, n);
     }
 
-    function esColor(v) {
-      if (v < 2)  return '#3a5070';
-      if (v < 5)  return '#38c0d8';
-      if (v < 7)  return '#70d050';
-      if (v < 9)  return '#e8c820';
-      if (v < 14) return '#e87018';
-      return '#f03030';
+    // Es intensity color (visible on white background)
+    function esColorCloud(v) {
+      if (v < 2)  return null;
+      if (v < 5)  return '#00a0c8';
+      if (v < 7)  return '#30a840';
+      if (v < 9)  return '#c8a000';
+      if (v < 14) return '#d05800';
+      return '#c02020';
     }
 
     function esClass(v) {
@@ -218,8 +245,6 @@
       return 'es-peak';
     }
 
-    // Weighted Es center latitude.
-    // Returns degrees N (defaults to 35 if no activity).
     function calcCenterLat(vals) {
       let wSum = 0, latSum = 0;
       for (const s of STATIONS) {
@@ -229,93 +254,21 @@
       return wSum > 0 ? latSum / wSum : 35.0;
     }
 
-    // Teardrop SVG path centered at (cx, cy).
-    //   angleDeg = 0   → round head points NORTH (negative SVG-y), tip points SOUTH
-    //   angleDeg = 180 → round head points SOUTH, tip points NORTH
-    // r   = circle radius
-    // ext = how far the tip extends beyond the circle edge
+    // Teardrop path: tip points toward origin, round head toward Es center
+    // angleDeg=0: round head NORTH; angleDeg=180: round head SOUTH
     function teardropPath(cx, cy, r, ext, angleDeg) {
-      const k = 0.5523; // bezier approximation constant for circle
+      const k = 0.5523;
       const theta = angleDeg * Math.PI / 180;
-      const cos = Math.cos(theta);
-      const sin = Math.sin(theta);
+      const cos = Math.cos(theta), sin = Math.sin(theta);
+      const T = (x, y) => `${(cx + x*cos - y*sin).toFixed(2)},${(cy + x*sin + y*cos).toFixed(2)}`;
 
-      // Rotate local (x,y) → world coordinates
-      const T = (x, y) => `${(cx + x * cos - y * sin).toFixed(2)},${(cy + x * sin + y * cos).toFixed(2)}`;
-
-      // Local: tip at (0, r+ext) [south], circle head at (0,-r) [north]
-      const tip   = T(0,  r + ext);
-      const right = T(r,  0);
-      const top   = T(0, -r);
-      const left  = T(-r, 0);
-
-      // tip → right  (bezier taper)
-      const c1a = T(r * 0.5,  r + ext);
-      const c1b = T(r,        r * 0.45);
-      // right → top  (quarter-circle bezier)
-      const c2a = T(r,        -r * k);
-      const c2b = T(r * k,    -r);
-      // top → left   (quarter-circle bezier)
-      const c3a = T(-r * k,   -r);
-      const c3b = T(-r,       -r * k);
-      // left → tip   (bezier taper)
-      const c4a = T(-r,        r * 0.45);
-      const c4b = T(-r * 0.5,  r + ext);
+      const tip   = T(0, r+ext), right = T(r, 0), top = T(0, -r), left = T(-r, 0);
+      const c1a = T(r*0.5, r+ext), c1b = T(r, r*0.45);
+      const c2a = T(r, -r*k),      c2b = T(r*k, -r);
+      const c3a = T(-r*k, -r),     c3b = T(-r, -r*k);
+      const c4a = T(-r, r*0.45),   c4b = T(-r*0.5, r+ext);
 
       return `M ${tip} C ${c1a} ${c1b} ${right} C ${c2a} ${c2b} ${top} C ${c3a} ${c3b} ${left} C ${c4a} ${c4b} ${tip} Z`;
-    }
-
-    // ── Es cloud glow ─────────────────────────────────────────
-    // Draw a soft radial-gradient "cloud" at each active station.
-    // screen blend-mode lets overlapping glows merge naturally,
-    // giving weather-radar-like coverage between stations.
-    function renderClouds(fxes) {
-      const group = document.getElementById('es-clouds');
-      group.innerHTML = '';
-
-      // Remove old cloud gradients from <defs>
-      const svgRoot = document.getElementById('es-svg');
-      const defs = svgRoot.querySelector('defs');
-      defs.querySelectorAll('[id^="cg-"]').forEach(el => el.remove());
-
-      const vals = {};
-      for (const s of STATIONS) vals[s.key] = fxVal(fxes[s.key]);
-
-      for (const s of STATIONS) {
-        const v = vals[s.key];
-        if (v < 2) continue;
-
-        const radius  = Math.min(180, 40 + v * 5.5);
-        const color   = esColor(v);
-        const peakOp  = Math.min(0.80, 0.35 + v * 0.022);
-
-        // Radial gradient: bright core → transparent edge
-        const gradId = `cg-${s.key}`;
-        const grad = document.createElementNS('http://www.w3.org/2000/svg', 'radialGradient');
-        grad.setAttribute('id', gradId);
-        grad.setAttribute('cx', s.x);
-        grad.setAttribute('cy', s.y);
-        grad.setAttribute('r', radius);
-        grad.setAttribute('gradientUnits', 'userSpaceOnUse');
-
-        [[0, peakOp], [0.45, peakOp * 0.45], [0.75, peakOp * 0.12], [1, 0]].forEach(([off, op]) => {
-          const stop = document.createElementNS('http://www.w3.org/2000/svg', 'stop');
-          stop.setAttribute('offset', `${off * 100}%`);
-          stop.setAttribute('stop-color', color);
-          stop.setAttribute('stop-opacity', op);
-          grad.appendChild(stop);
-        });
-        defs.appendChild(grad);
-
-        // Filled circle using the gradient
-        const circ = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
-        circ.setAttribute('cx', s.x);
-        circ.setAttribute('cy', s.y);
-        circ.setAttribute('r', radius);
-        circ.setAttribute('fill', `url(#${gradId})`);
-        if (v >= 9) circ.classList.add('es-pulse');
-        group.appendChild(circ);
-      }
     }
 
     function svgEl(tag, attrs) {
@@ -324,92 +277,128 @@
       return el;
     }
 
-    function renderMap(fxes) {
+    // ── Cloud layer ───────────────────────────────────────────────
+    function renderClouds(fxes) {
+      const group  = document.getElementById('es-clouds');
+      group.innerHTML = '';
+      const svgRoot = document.getElementById('es-svg');
+      const defs    = svgRoot.querySelector('defs');
+      defs.querySelectorAll('[id^="cg-"]').forEach(el => el.remove());
+
+      for (const s of STATIONS) {
+        const v     = fxVal(fxes[s.key]);
+        const color = esColorCloud(v);
+        if (!color) continue;
+
+        const radius = Math.min(190, 45 + v * 5.5);
+        // Core opacity: moderate on white to not overwhelm the map
+        const coreOp = Math.min(0.55, 0.22 + v * 0.015);
+
+        const gradId = `cg-${s.key}`;
+        const grad   = document.createElementNS('http://www.w3.org/2000/svg', 'radialGradient');
+        grad.setAttribute('id', gradId);
+        grad.setAttribute('cx', s.x);
+        grad.setAttribute('cy', s.y);
+        grad.setAttribute('r', radius);
+        grad.setAttribute('gradientUnits', 'userSpaceOnUse');
+
+        [[0, coreOp], [0.4, coreOp * 0.55], [0.7, coreOp * 0.18], [1, 0]].forEach(([off, op]) => {
+          const stop = document.createElementNS('http://www.w3.org/2000/svg', 'stop');
+          stop.setAttribute('offset', `${off * 100}%`);
+          stop.setAttribute('stop-color', color);
+          stop.setAttribute('stop-opacity', op.toFixed(3));
+          grad.appendChild(stop);
+        });
+        defs.appendChild(grad);
+
+        const circ = svgEl('circle', {
+          cx: s.x, cy: s.y, r: radius,
+          fill: `url(#${gradId})`,
+        });
+        if (v >= 9) circ.classList.add('es-anim');
+        group.appendChild(circ);
+      }
+    }
+
+    // ── Teardrop + label layer ────────────────────────────────────
+    function renderTeardrops(fxes) {
       const group = document.getElementById('teardrops');
       group.innerHTML = '';
 
       const vals = {};
       for (const s of STATIONS) vals[s.key] = fxVal(fxes[s.key]);
-
       const centerLat = calcCenterLat(vals);
 
       for (const s of STATIONS) {
-        const v = vals[s.key];
-        const color = esColor(v);
-
-        // angleDeg: round head points toward Es concentration center
-        const angleDeg = (centerLat >= s.lat) ? 0 : 180;
-
-        const r   = v < 2 ? 0  : Math.min(44, 12 + v * 1.8);
-        const ext = r * 0.55;
-
-        const g = svgEl('g', {});
+        const v     = vals[s.key];
+        const color = esColorCloud(v) || '#c0ccd8';
+        const angle = (centerLat >= s.lat) ? 0 : 180;
+        const r     = v < 2 ? 0 : Math.min(44, 12 + v * 1.8);
+        const ext   = r * 0.55;
+        const g     = svgEl('g', {});
 
         if (v >= 2) {
           const path = svgEl('path', {
-            d:                teardropPath(s.x, s.y, r, ext, angleDeg),
+            d:                teardropPath(s.x, s.y, r, ext, angle),
             fill:             color,
-            'fill-opacity':   '0.60',
-            stroke:           color,
+            'fill-opacity':   '0.75',
+            stroke:           '#fff',
             'stroke-width':   '1.5',
-            'stroke-opacity': '1',
+            'stroke-opacity': '0.9',
           });
-          if (v >= 9)  { path.setAttribute('filter', 'url(#glow-strong)'); path.classList.add('es-pulse'); }
-          else if (v >= 5) path.setAttribute('filter', 'url(#glow-weak)');
+          if (v >= 9) { path.setAttribute('filter', 'url(#glow-td)'); path.classList.add('es-anim'); }
           g.appendChild(path);
 
-          // FxEs value label centered at station position
+          // FxEs value inside teardrop
           const fs = Math.max(9, Math.min(15, r * 0.65));
-          const lbl = svgEl('text', {
-            x:               s.x,
-            y:               s.y + fs * 0.38,
-            'text-anchor':   'middle',
-            fill:            '#ffffff',
-            'font-size':     fs,
-            'font-weight':   '700',
-            'font-family':   'sans-serif',
-          });
-          lbl.textContent = v.toFixed(1);
-          g.appendChild(lbl);
-
-          // Station name below the teardrop (clamped to viewBox)
-          const nameY = Math.min(s.y + r + ext + 13, 421);
-          const nameAboveY = Math.max(s.y - r - ext - 4, 11);
-          const useBelow = nameY < 422 && (s.y + r + ext + 13) <= 421;
-          const nameFinalY = useBelow ? nameY : nameAboveY;
-
-          const nameLbl = svgEl('text', {
-            x:             s.x,
-            y:             nameFinalY,
+          const vLbl = svgEl('text', {
+            x: s.x, y: s.y + fs * 0.38,
             'text-anchor': 'middle',
-            fill:          '#405868',
-            'font-size':   '10',
+            fill: '#fff',
+            'font-size': fs,
+            'font-weight': '700',
             'font-family': 'sans-serif',
           });
-          nameLbl.textContent = s.name;
-          g.appendChild(nameLbl);
+          vLbl.textContent = v.toFixed(1);
+          g.appendChild(vLbl);
+
+          // Station name: below teardrop if space, above if near bottom of SVG
+          const nameY = (s.y + r + ext + 13 <= 418)
+                        ? s.y + r + ext + 13
+                        : Math.max(s.y - r - ext - 3, 11);
+          const nLbl = svgEl('text', {
+            x: s.x, y: nameY,
+            'text-anchor': 'middle',
+            fill: '#607080',
+            'font-size': '11',
+            'font-family': 'sans-serif',
+          });
+          nLbl.textContent = s.name;
+          g.appendChild(nLbl);
 
         } else {
-          // Inactive station: small dim dot
+          // Inactive: dot + name
           g.appendChild(svgEl('circle', {
-            cx: s.x, cy: s.y, r: '4',
-            fill: color, 'fill-opacity': '0.45',
+            cx: s.x, cy: s.y, r: '5',
+            fill: '#c8d4e0', 'fill-opacity': '0.7',
+            stroke: '#a0b0c0', 'stroke-width': '1',
           }));
-          const nameLbl = svgEl('text', {
-            x: s.x, y: s.y + 14,
+          const nLbl = svgEl('text', {
+            x: s.x, y: s.y + 16,
             'text-anchor': 'middle',
-            fill: '#304050',
-            'font-size': '10',
+            fill: '#a0b0c8',
+            'font-size': '11',
             'font-family': 'sans-serif',
           });
-          nameLbl.textContent = s.name;
-          g.appendChild(nameLbl);
+          nLbl.textContent = s.name;
+          g.appendChild(nLbl);
         }
 
         group.appendChild(g);
       }
     }
 
+    // ── Station cards ─────────────────────────────────────────────
     function updateCards(fxes) {
       for (const s of STATIONS) {
         const v  = fxVal(fxes[s.key]);
@@ -420,7 +409,7 @@
         valEl.className = 'stn-fxes ' + esClass(v);
 
         document.getElementById('r27-' + s.key).textContent =
-          v > 0 ? (v / 27).toFixed(2) + ' / 27' : '-- / 27';
+          v > 0 ? (v / 27).toFixed(2) + '/27' : '--/27';
 
         const tEl = document.getElementById('trend-' + s.key);
         if (v > 0 && pv > 0) {
@@ -432,21 +421,52 @@
       }
     }
 
+    // ── Status summary ────────────────────────────────────────────
+    function updateStatus(fxes) {
+      const vals  = STATIONS.map(s => ({ ...s, v: fxVal(fxes[s.key]) }));
+      const active = vals.filter(s => s.v >= 5);
+
+      let headline, detail;
+      if (active.length === 0) {
+        const weak = vals.filter(s => s.v >= 2);
+        headline = weak.length > 0
+          ? 'Es 微弱 — 顕著な発生なし'
+          : 'Es 静穏 — 発生なし';
+        detail = '全観測局でFxEs < 5 MHz';
+      } else {
+        const names   = active.map(s => `${s.name} ${s.v.toFixed(1)}MHz`).join(' / ');
+        const maxV    = Math.max(...active.map(s => s.v));
+        const level   = maxV >= 14 ? '強烈なEs発生' : maxV >= 9 ? '強いEs発生中' : 'Es発生中';
+        headline = `${level}`;
+        detail   = names;
+      }
+      document.getElementById('status-headline').textContent = headline;
+      document.getElementById('status-detail').textContent   = detail;
+
+      // Headline color
+      const h = document.getElementById('status-headline');
+      const maxAll = Math.max(...vals.map(s => s.v));
+      if (maxAll >= 9)  h.style.color = '#c02020';
+      else if (maxAll >= 5) h.style.color = '#8a6000';
+      else              h.style.color = '#1a2838';
+    }
+
+    // ── Fetch & render ────────────────────────────────────────────
     async function fetchData() {
       try {
         const res = await fetch(DATA_URL + '?_=' + Date.now());
         if (!res.ok) throw new Error('HTTP ' + res.status);
         const data = await res.json();
-        const fx = data.fxes;
+        const fx   = data.fxes;
 
         renderClouds(fx);
-        renderMap(fx);
+        renderTeardrops(fx);
         updateCards(fx);
+        updateStatus(fx);
 
-        document.getElementById('obs-time-bar').textContent =
-          `観測 ${fx.date} ${fx.time} JST`;
+        document.getElementById('obs-time').textContent = `観測 ${fx.date} ${fx.time} JST`;
         document.getElementById('note-bar').textContent =
-          'FxEs（最大観測周波数）を使用 — CB27MHz評価にはfoEsが必要（今後実装予定） | 5分ごと自動更新';
+          'FxEs（最大観測周波数）を表示 — CB 27MHz判定にはfoEsが必要（今後実装予定） | 5分ごと自動更新';
       } catch (e) {
         document.getElementById('note-bar').textContent = 'データ取得エラー: ' + e.message;
       }
