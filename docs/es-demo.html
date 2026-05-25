@@ -202,16 +202,8 @@
         <!-- Halo rings around active stations (rendered by JS) -->
         <g id="stn-halos"></g>
 
-        <!-- Glow lines (fat+blurred, drawn behind sharp lines) -->
-        <line id="sglow-ok" opacity="0" stroke-width="12" filter="url(#line-glow)"/>
-        <line id="sglow-yg" opacity="0" stroke-width="12" filter="url(#line-glow)"/>
-        <line id="sglow-to" opacity="0" stroke-width="12" filter="url(#line-glow)"/>
-        <line id="sglow-wk" opacity="0" stroke-width="12" filter="url(#line-glow)"/>
-        <!-- Sharp connection lines (rendered by JS) -->
-        <line id="sline-ok" opacity="0" stroke-width="4"/>
-        <line id="sline-yg" opacity="0" stroke-width="4"/>
-        <line id="sline-to" opacity="0" stroke-width="4"/>
-        <line id="sline-wk" opacity="0" stroke-width="4"/>
+        <!-- Directional sectors in skip zone (rendered by JS) -->
+        <g id="stn-sectors"></g>
 
         <!-- Station dots (rendered by JS) -->
         <circle id="sdot-ok" cx="146.5" cy="117.7" r="5" fill="#a0b0c8" opacity="0.5"/>
@@ -340,6 +332,39 @@
 
     const SVG_NS = 'http://www.w3.org/2000/svg';
 
+    // Geographic bearing from Osaka to each station (clockwise from North)
+    const OSAKA_LAT = 34.7, OSAKA_LON = 135.5;
+    const STN_GEO = {
+      ok: { lat: 26.7, lon: 127.9 },
+      yg: { lat: 31.2, lon: 130.4 },
+      to: { lat: 35.7, lon: 140.1 },
+      wk: { lat: 45.4, lon: 141.7 },
+    };
+    function geoBearing(lat1, lon1, lat2, lon2) {
+      const r = Math.PI / 180;
+      const φ1 = lat1*r, φ2 = lat2*r, Δλ = (lon2-lon1)*r;
+      const y = Math.sin(Δλ) * Math.cos(φ2);
+      const x = Math.cos(φ1)*Math.sin(φ2) - Math.sin(φ1)*Math.cos(φ2)*Math.cos(Δλ);
+      return (Math.atan2(y, x) * 180/Math.PI + 360) % 360;
+    }
+    // Pre-compute SVG angles (geographic bearing → SVG: -90° because SVG x-right = East = bearing 90°)
+    const STN_ANGLE = {};
+    for (const [k, g] of Object.entries(STN_GEO)) {
+      STN_ANGLE[k] = geoBearing(OSAKA_LAT, OSAKA_LON, g.lat, g.lon) - 90;
+    }
+
+    // Draw a donut sector from rIn to rOut, centered at angleDeg ± halfDeg
+    function sectorPath(cx, cy, rIn, rOut, angleDeg, halfDeg) {
+      const r = Math.PI / 180;
+      const a1 = (angleDeg - halfDeg) * r, a2 = (angleDeg + halfDeg) * r;
+      const f = (v) => v.toFixed(2);
+      const xi1 = cx + rIn*Math.cos(a1),  yi1 = cy + rIn*Math.sin(a1);
+      const xi2 = cx + rIn*Math.cos(a2),  yi2 = cy + rIn*Math.sin(a2);
+      const xo1 = cx + rOut*Math.cos(a1), yo1 = cy + rOut*Math.sin(a1);
+      const xo2 = cx + rOut*Math.cos(a2), yo2 = cy + rOut*Math.sin(a2);
+      return `M ${f(xi1)},${f(yi1)} A ${rIn},${rIn} 0 0,1 ${f(xi2)},${f(yi2)} L ${f(xo2)},${f(yo2)} A ${rOut},${rOut} 0 0,0 ${f(xo1)},${f(yo1)} Z`;
+    }
+
     function esColorCloud(v) {
       if (v < 3)  return null;
       if (v < 5)  return '#0090c8';
@@ -350,11 +375,13 @@
     }
 
     function renderMap(vals) {
-      // Clear halos + clouds
-      const halosGroup  = document.getElementById('stn-halos');
-      const cloudsGroup = document.getElementById('es-clouds');
-      halosGroup.innerHTML  = '';
-      cloudsGroup.innerHTML = '';
+      // Clear dynamic groups
+      const halosGroup   = document.getElementById('stn-halos');
+      const cloudsGroup  = document.getElementById('es-clouds');
+      const sectorsGroup = document.getElementById('stn-sectors');
+      halosGroup.innerHTML   = '';
+      cloudsGroup.innerHTML  = '';
+      sectorsGroup.innerHTML = '';
 
       // Remove old radial gradient defs
       const svgDefs = document.querySelector('#es-map defs');
@@ -434,33 +461,14 @@
         mhz.textContent = v > 0 ? v.toFixed(1) + ' MHz' : '';
         mhz.setAttribute('fill', esColor(v));
 
-        // --- Connection line from Osaka (sharp + glow) ---
-        const line  = document.getElementById('sline-' + k);
-        const glow  = document.getElementById('sglow-' + k);
+        // --- Directional sector in skip zone ---
         if (active) {
-          const col = esColor(v);
-          const op  = Math.min(0.92, 0.45 + v * 0.055);
-          for (const el of [line, glow]) {
-            el.setAttribute('x1', OX); el.setAttribute('y1', OY);
-            el.setAttribute('x2', s.x); el.setAttribute('y2', s.y);
-            el.setAttribute('stroke', col);
-            el.setAttribute('opacity', op);
-          }
-          if (chance) {
-            line.setAttribute('stroke-width', v >= 9 ? '5' : '4');
-            glow.setAttribute('stroke-width', v >= 9 ? '18' : '14');
-            line.removeAttribute('stroke-dasharray');
-            line.classList.remove('line-march');
-          } else {
-            line.setAttribute('stroke-width', '3');
-            glow.setAttribute('stroke-width', '10');
-            line.setAttribute('stroke-dasharray', '10 7');
-            line.classList.add('line-march');
-          }
-        } else {
-          line.setAttribute('opacity', '0');
-          glow.setAttribute('opacity', '0');
-          line.classList.remove('line-march');
+          const sec = document.createElementNS(SVG_NS, 'path');
+          sec.setAttribute('d', sectorPath(OX, OY, 86, 267, STN_ANGLE[k], 28));
+          sec.setAttribute('fill', esColor(v));
+          sec.setAttribute('opacity', Math.min(0.70, 0.30 + v * 0.05));
+          if (chance) sec.setAttribute('filter', 'url(#line-glow)');
+          sectorsGroup.appendChild(sec);
         }
       }
     }
