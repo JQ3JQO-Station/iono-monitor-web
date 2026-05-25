@@ -27,13 +27,13 @@
       padding: 10px 12px;
     }
     .time-row { display: flex; align-items: center; gap: 8px; }
-    #time-display { font-size: 1.1rem; font-weight: 800; color: #1a3050; min-width: 90px; }
+    #time-display { font-size: 1.3rem; font-weight: 800; color: #1a3050; min-width: 90px; }
     #play-btn {
       background: #3a7bd5; color: #fff; border: none;
-      border-radius: 8px; padding: 6px 14px;
-      font-size: 0.8rem; font-weight: 700; cursor: pointer;
+      border-radius: 8px; padding: 8px 18px;
+      font-size: 0.85rem; font-weight: 700; cursor: pointer;
     }
-    #play-btn:active { background: #2a5ba5; }
+    #play-btn:active { background: #1a5ba5; }
     input[type=range] { flex: 1; cursor: pointer; }
     .time-note { font-size: 0.58rem; color: #a0b0c8; margin-top: 4px; }
 
@@ -82,10 +82,10 @@
       box-shadow: 0 1px 4px rgba(0,20,60,0.10);
       padding: 10px 12px;
     }
-    .map-title { font-size: 0.58rem; font-weight: 700; color: #8090a8; letter-spacing: .1em; text-transform: uppercase; margin-bottom: 6px; }
+    .map-title { font-size: 0.72rem; font-weight: 600; color: #5060a0; margin-bottom: 8px; }
     .map-wrapper { position: relative; width: 100%; aspect-ratio: 1; margin: 0 auto; }
     .map-wrapper svg { width: 100%; height: 100%; display: block; overflow: visible; }
-    .island { fill: rgba(80,140,70,0.14); stroke: #6aaa50; stroke-width: 3px; stroke-linecap: round; stroke-linejoin: round; }
+    .island { fill: rgba(80,150,60,0.13); stroke: #60a840; stroke-width: 3px; stroke-linecap: round; stroke-linejoin: round; }
 
     /* halo pulse animation */
     @keyframes halo-pulse {
@@ -98,12 +98,14 @@
       transform-origin: center;
       animation: halo-pulse 1.8s ease-out infinite;
     }
-    /* marching dashes on connection lines */
-    @keyframes dash-march {
-      to { stroke-dashoffset: -20; }
+
+    /* strong sector pulse */
+    @keyframes sector-pulse {
+      0%,100% { opacity: 0.9; }
+      50%     { opacity: 1;   }
     }
-    .line-march {
-      animation: dash-march 0.45s linear infinite;
+    .sector-strong {
+      animation: sector-pulse 2s ease-in-out infinite;
     }
 
     /* narrative */
@@ -176,6 +178,9 @@
             <feGaussianBlur stdDeviation="4" result="blur"/>
             <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
           </filter>
+          <filter id="sector-blur" x="-30%" y="-30%" width="160%" height="160%">
+            <feGaussianBlur stdDeviation="10"/>
+          </filter>
         </defs>
         <!-- Japan islands -->
         <path class="island" d="M124.91,55.12l-7.07-7.07c-2.06-2.06-5.39-2.06-7.45,0l-13.85,13.85c-1.92,1.92-5,2.07-7.09.33l-1.7-1.41c-2.24-1.86-5.56-1.55-7.42.69l-1.73,2.09c-1.86,2.24-1.55,5.56.69,7.42h0c2.39,1.98,2.55,5.59.36,7.78l-18.41,18.41v21.71c0,2.91,2.36,5.27,5.27,5.27h6.94c2.91,0,5.27-2.36,5.27-5.27v-7.97c0-1.4.56-2.74,1.54-3.73l44.65-44.65c2.06-2.06,2.06-5.39,0-7.45Z"/>
@@ -186,16 +191,15 @@
 
         <!-- Skip zone: donut fill between 450km(r=86) and 1400km(r=267) -->
         <path fill-rule="evenodd"
-              fill="rgba(80,140,220,0.12)"
+              fill="rgba(90,130,210,0.10)"
               d="M 209,44 A 267,267 0 1,0 209,578 A 267,267 0 1,0 209,44 Z
                  M 209,225 A 86,86 0 1,0 209,397 A 86,86 0 1,0 209,225 Z"/>
         <!-- Inner boundary (450km dead zone) -->
-        <circle cx="209" cy="311" r="86"  fill="none" stroke="#7080b8" stroke-width="2.5" stroke-dasharray="9,5" opacity="0.85"/>
+        <circle cx="209" cy="311" r="86"  fill="none" stroke="#8898cc" stroke-width="2.5" stroke-dasharray="9,5" opacity="0.75"/>
         <!-- Outer boundary (1400km) -->
-        <circle cx="209" cy="311" r="267" fill="none" stroke="#7080b8" stroke-width="2.5" stroke-dasharray="9,5" opacity="0.85"/>
+        <circle cx="209" cy="311" r="267" fill="none" stroke="#8898cc" stroke-width="2.5" stroke-dasharray="9,5" opacity="0.75"/>
         <!-- Ring labels -->
-        <text x="216" y="228" font-size="8" fill="#6070a8" opacity="0.9" font-weight="bold">近すぎ</text>
-        <text x="298" y="220" font-size="8" fill="#5068b0" opacity="0.9" font-weight="bold">スキップゾーン</text>
+        <text x="216" y="232" font-size="8" fill="#6070a8" opacity="0.9" font-weight="bold">近すぎ（〜450km）</text>
 
         <!-- Es cloud coverage (weather-radar style, rendered by JS) -->
         <g id="es-clouds"></g>
@@ -212,20 +216,23 @@
         <circle id="sdot-wk" cx="333.4" cy="51.8"  r="5" fill="#a0b0c8" opacity="0.5"/>
 
         <!-- Station labels -->
-        <text x="152" y="112" font-size="9.5" fill="#6070a0" id="slbl-ok">沖縄</text>
-        <text x="80"  y="378" font-size="9.5" fill="#6070a0" id="slbl-yg">鹿児島</text>
-        <text x="335" y="285" font-size="9.5" fill="#6070a0" id="slbl-to">東京</text>
-        <text x="338" y="47"  font-size="9.5" fill="#6070a0" id="slbl-wk">北海道</text>
+        <text x="152" y="112" font-size="10.5" fill="#6070a0" id="slbl-ok" stroke="rgba(255,255,255,0.85)" stroke-width="3" paint-order="stroke">沖縄</text>
+        <text x="80"  y="378" font-size="10.5" fill="#6070a0" id="slbl-yg" stroke="rgba(255,255,255,0.85)" stroke-width="3" paint-order="stroke">鹿児島</text>
+        <text x="335" y="285" font-size="10.5" fill="#6070a0" id="slbl-to" stroke="rgba(255,255,255,0.85)" stroke-width="3" paint-order="stroke">東京</text>
+        <text x="338" y="47"  font-size="10.5" fill="#6070a0" id="slbl-wk" stroke="rgba(255,255,255,0.85)" stroke-width="3" paint-order="stroke">北海道</text>
         <!-- MHz value overlays -->
-        <text x="152" y="123" font-size="9" fill="#6070a0" id="smhz-ok" font-weight="bold"></text>
-        <text x="80"  y="390" font-size="9" fill="#6070a0" id="smhz-yg" font-weight="bold"></text>
-        <text x="335" y="296" font-size="9" fill="#6070a0" id="smhz-to" font-weight="bold"></text>
-        <text x="338" y="58"  font-size="9" fill="#6070a0" id="smhz-wk" font-weight="bold"></text>
+        <text x="152" y="123" font-size="9" fill="#6070a0" id="smhz-ok" font-weight="bold" stroke="rgba(255,255,255,0.85)" stroke-width="3" paint-order="stroke"></text>
+        <text x="80"  y="390" font-size="9" fill="#6070a0" id="smhz-yg" font-weight="bold" stroke="rgba(255,255,255,0.85)" stroke-width="3" paint-order="stroke"></text>
+        <text x="335" y="296" font-size="9" fill="#6070a0" id="smhz-to" font-weight="bold" stroke="rgba(255,255,255,0.85)" stroke-width="3" paint-order="stroke"></text>
+        <text x="338" y="58"  font-size="9" fill="#6070a0" id="smhz-wk" font-weight="bold" stroke="rgba(255,255,255,0.85)" stroke-width="3" paint-order="stroke"></text>
 
-        <!-- Osaka marker -->
-        <circle cx="209" cy="311" r="4.5" fill="#1a3050"/>
-        <circle cx="209" cy="311" r="7"   fill="none" stroke="#1a3050" stroke-width="1.2" opacity="0.5"/>
-        <text x="215" y="307" font-size="8" fill="#1a3050" font-weight="bold">大阪</text>
+        <!-- Osaka crosshair marker -->
+        <line x1="203" y1="311" x2="215" y2="311" stroke="#1a3050" stroke-width="2.2"/>
+        <line x1="209" y1="305" x2="209" y2="317" stroke="#1a3050" stroke-width="2.2"/>
+        <circle cx="209" cy="311" r="3.5" fill="#1a3050"/>
+        <circle cx="209" cy="311" r="7.5" fill="none" stroke="#1a3050" stroke-width="1.5" opacity="0.7"/>
+        <rect x="212" y="299.5" width="22" height="10.5" rx="2" fill="rgba(255,255,255,0.88)"/>
+        <text x="213.5" y="308" font-size="9" fill="#1a3050" font-weight="bold">大阪</text>
 
       </svg>
     </div>
@@ -461,14 +468,28 @@
         mhz.textContent = v > 0 ? v.toFixed(1) + ' MHz' : '';
         mhz.setAttribute('fill', esColor(v));
 
-        // --- Directional sector in skip zone ---
+        // --- Directional sector in skip zone (blurred, weather-radar style) ---
         if (active) {
+          const d = sectorPath(OX, OY, 86, 267, STN_ANGLE[k], 28);
           const sec = document.createElementNS(SVG_NS, 'path');
-          sec.setAttribute('d', sectorPath(OX, OY, 86, 267, STN_ANGLE[k], 28));
+          sec.setAttribute('d', d);
           sec.setAttribute('fill', esColor(v));
-          sec.setAttribute('opacity', Math.min(0.70, 0.30 + v * 0.05));
-          if (chance) sec.setAttribute('filter', 'url(#line-glow)');
+          sec.setAttribute('opacity', Math.min(0.80, 0.35 + v * 0.055));
+          sec.setAttribute('filter', 'url(#sector-blur)');
+          if (v >= 9 && inZone && chance) {
+            sec.classList.add('sector-strong');
+          }
           sectorsGroup.appendChild(sec);
+
+          // Sharp overlay for strong sectors (v >= 9)
+          if (v >= 9 && inZone && chance) {
+            const secSharp = document.createElementNS(SVG_NS, 'path');
+            secSharp.setAttribute('d', d);
+            secSharp.setAttribute('fill', esColor(v));
+            secSharp.setAttribute('opacity', '0.30');
+            secSharp.classList.add('sector-strong');
+            sectorsGroup.appendChild(secSharp);
+          }
         }
       }
     }
