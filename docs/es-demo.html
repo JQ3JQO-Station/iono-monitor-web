@@ -83,9 +83,9 @@
       padding: 10px 12px;
     }
     .map-title { font-size: 0.58rem; font-weight: 700; color: #8090a8; letter-spacing: .1em; text-transform: uppercase; margin-bottom: 6px; }
-    .map-wrapper { position: relative; width: min(100%, 58vw); aspect-ratio: 1; margin: 0 auto; }
+    .map-wrapper { position: relative; width: 100%; aspect-ratio: 1; margin: 0 auto; }
     .map-wrapper svg { width: 100%; height: 100%; display: block; overflow: visible; }
-    .island { fill: rgba(80,140,70,0.11); stroke: #7aaa60; stroke-width: 2.5px; stroke-linecap: round; stroke-linejoin: round; }
+    .island { fill: rgba(80,140,70,0.14); stroke: #6aaa50; stroke-width: 3px; stroke-linecap: round; stroke-linejoin: round; }
 
     /* halo pulse animation */
     @keyframes halo-pulse {
@@ -197,6 +197,8 @@
         <text x="216" y="228" font-size="8" fill="#6070a8" opacity="0.9" font-weight="bold">近すぎ</text>
         <text x="298" y="220" font-size="8" fill="#5068b0" opacity="0.9" font-weight="bold">スキップゾーン</text>
 
+        <!-- Es cloud coverage (weather-radar style, rendered by JS) -->
+        <g id="es-clouds"></g>
         <!-- Halo rings around active stations (rendered by JS) -->
         <g id="stn-halos"></g>
 
@@ -338,10 +340,58 @@
 
     const SVG_NS = 'http://www.w3.org/2000/svg';
 
+    function esColorCloud(v) {
+      if (v < 3)  return null;
+      if (v < 5)  return '#0090c8';
+      if (v < 7)  return '#28a838';
+      if (v < 9)  return '#d09000';
+      if (v < 14) return '#d05000';
+      return '#c02020';
+    }
+
     function renderMap(vals) {
-      // Clear halos
-      const halosGroup = document.getElementById('stn-halos');
-      halosGroup.innerHTML = '';
+      // Clear halos + clouds
+      const halosGroup  = document.getElementById('stn-halos');
+      const cloudsGroup = document.getElementById('es-clouds');
+      halosGroup.innerHTML  = '';
+      cloudsGroup.innerHTML = '';
+
+      // Remove old radial gradient defs
+      const svgDefs = document.querySelector('#es-map defs');
+      svgDefs.querySelectorAll('[id^="cg-"]').forEach(el => el.remove());
+
+      // --- Weather-radar clouds ---
+      for (const r of REGIONS) {
+        const k   = r.station;
+        const v   = vals[k];
+        const s   = STN_SVG[k];
+        const col = esColorCloud(v);
+        if (!col || v < 3) continue;
+        const radius = Math.min(110, 35 + v * 6);
+        const gradId = 'cg-' + k;
+        const grad = document.createElementNS(SVG_NS, 'radialGradient');
+        grad.setAttribute('id', gradId);
+        grad.setAttribute('cx', '50%'); grad.setAttribute('cy', '50%');
+        grad.setAttribute('r',  '50%');
+        const stops = [
+          { offset:'0%',   color: col, opacity: Math.min(0.75, 0.35 + v * 0.04) },
+          { offset:'55%',  color: col, opacity: Math.min(0.45, 0.15 + v * 0.025) },
+          { offset:'100%', color: col, opacity: 0 },
+        ];
+        stops.forEach(({ offset, color, opacity }) => {
+          const stop = document.createElementNS(SVG_NS, 'stop');
+          stop.setAttribute('offset', offset);
+          stop.setAttribute('stop-color', color);
+          stop.setAttribute('stop-opacity', opacity);
+          grad.appendChild(stop);
+        });
+        svgDefs.appendChild(grad);
+        const circ = document.createElementNS(SVG_NS, 'circle');
+        circ.setAttribute('cx', s.x); circ.setAttribute('cy', s.y);
+        circ.setAttribute('r',  radius);
+        circ.setAttribute('fill', `url(#${gradId})`);
+        cloudsGroup.appendChild(circ);
+      }
 
       for (const r of REGIONS) {
         const k      = r.station;
@@ -359,18 +409,20 @@
         dot.setAttribute('opacity', v > 0 ? '1' : '0.30');
         dot.setAttribute('filter', active ? 'url(#stn-glow)' : '');
 
-        // --- Pulsing halo (only when active in zone) ---
+        // --- Pulsing halos (2 rings, staggered) ---
         if (active) {
-          const halo = document.createElementNS(SVG_NS, 'circle');
-          halo.setAttribute('cx', s.x);
-          halo.setAttribute('cy', s.y);
-          halo.setAttribute('r', dotR);
-          halo.setAttribute('fill', esColor(v));
-          halo.setAttribute('opacity', '0.45');
-          halo.classList.add('halo-ring');
-          // stagger: delay based on station index to avoid sync
-          halo.style.animationDelay = ({ ok:'0s', yg:'0.45s', to:'0.9s', wk:'1.35s' })[k];
-          halosGroup.appendChild(halo);
+          const delays = [0, 0.7];
+          delays.forEach((delay, i) => {
+            const halo = document.createElementNS(SVG_NS, 'circle');
+            halo.setAttribute('cx', s.x);
+            halo.setAttribute('cy', s.y);
+            halo.setAttribute('r', dotR * 1.5);
+            halo.setAttribute('fill', esColor(v));
+            halo.setAttribute('opacity', '0.5');
+            halo.classList.add('halo-ring');
+            halo.style.animationDelay = delay + 's';
+            halosGroup.appendChild(halo);
+          });
         }
 
         // --- Labels ---
