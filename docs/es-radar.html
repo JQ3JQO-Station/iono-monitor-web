@@ -138,6 +138,10 @@
     <div class="map-wrapper">
       <svg id="es-svg" viewBox="0 0 424.69 424.87" xmlns="http://www.w3.org/2000/svg">
         <defs>
+          <!-- soft blur for inter-station connection bands -->
+          <filter id="cloud-blur" x="-40%" y="-40%" width="180%" height="180%">
+            <feGaussianBlur stdDeviation="22"/>
+          </filter>
           <!-- glow filters for teardrop markers -->
           <filter id="glow-td" x="-80%" y="-80%" width="260%" height="260%">
             <feGaussianBlur stdDeviation="5" result="blur"/>
@@ -156,7 +160,9 @@
         <!-- 北海道 -->
         <path class="island" d="M357.94,2h56.11c4.77,0,8.64,3.87,8.64,8.64v83.23c0,4.77-3.87,8.64-8.64,8.64h-75.98c-2.24,0-4.4.87-6.01,2.43l-3.7,3.59c-1.61,1.56-3.76,2.43-6.01,2.43h-15.74c-4.77,0-8.64-3.87-8.64-8.64V10.64c0-4.77,3.87-8.64,8.64-8.64h51.33Z"/>
 
-        <!-- Layer 1: Es cloud coverage (radial gradients, rendered by JS) -->
+        <!-- Layer 1: inter-station connection bands (rendered by JS) -->
+        <g id="es-connections"></g>
+        <!-- Layer 2: Es cloud coverage at each station (rendered by JS) -->
         <g id="es-clouds"></g>
         <!-- Layer 2: Teardrop direction markers (rendered by JS) -->
         <g id="teardrops"></g>
@@ -275,6 +281,47 @@
       const el = document.createElementNS('http://www.w3.org/2000/svg', tag);
       for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, v);
       return el;
+    }
+
+    // ── Connection bands between adjacent active stations ─────────
+    // When two neighboring stations both have Es, draw a thick soft line
+    // between them so the "between" area is visually covered.
+    // Pairs: yg↔to (Kagoshima–Tokyo main corridor), to↔wk (Tokyo–Hokkaido)
+    // ok (Okinawa) is shown as an independent cloud (schematic position on map).
+    const CONN_PAIRS = [
+      { a: 'yg', b: 'to' },
+      { a: 'to', b: 'wk' },
+    ];
+
+    function renderConnections(fxes) {
+      const group = document.getElementById('es-connections');
+      group.innerHTML = '';
+      const sMap = Object.fromEntries(STATIONS.map(s => [s.key, s]));
+
+      for (const { a, b } of CONN_PAIRS) {
+        const va = fxVal(fxes[a]);
+        const vb = fxVal(fxes[b]);
+        const vMin = Math.min(va, vb);
+        if (vMin < 3) continue; // both must have meaningful Es
+
+        const sa = sMap[a], sb = sMap[b];
+        const vAvg  = (va + vb) / 2;
+        const color = esColorCloud(vAvg) || '#a0b0c8';
+        // Stroke width scales with the weaker of the two stations
+        const sw  = Math.min(130, 55 + vMin * 7);
+        const op  = Math.min(0.48, 0.18 + vMin * 0.016);
+
+        const line = svgEl('line', {
+          x1: sa.x, y1: sa.y,
+          x2: sb.x, y2: sb.y,
+          stroke:           color,
+          'stroke-width':   sw,
+          'stroke-linecap': 'round',
+          'stroke-opacity': op,
+          filter:           'url(#cloud-blur)',
+        });
+        group.appendChild(line);
+      }
     }
 
     // ── Cloud layer ───────────────────────────────────────────────
@@ -459,6 +506,7 @@
         const data = await res.json();
         const fx   = data.fxes;
 
+        renderConnections(fx);
         renderClouds(fx);
         renderTeardrops(fx);
         updateCards(fx);
