@@ -87,6 +87,25 @@
     .map-wrapper svg { width: 100%; height: 100%; display: block; overflow: visible; }
     .island { fill: rgba(80,140,70,0.11); stroke: #7aaa60; stroke-width: 2.5px; stroke-linecap: round; stroke-linejoin: round; }
 
+    /* halo pulse animation */
+    @keyframes halo-pulse {
+      0%   { transform: scale(1);   opacity: 0.50; }
+      65%  { transform: scale(3.2); opacity: 0;    }
+      100% { transform: scale(3.2); opacity: 0;    }
+    }
+    .halo-ring {
+      transform-box: fill-box;
+      transform-origin: center;
+      animation: halo-pulse 1.8s ease-out infinite;
+    }
+    /* marching dashes on connection lines */
+    @keyframes dash-march {
+      to { stroke-dashoffset: -20; }
+    }
+    .line-march {
+      animation: dash-march 0.45s linear infinite;
+    }
+
     /* narrative */
     #narrative {
       background: #1a3050; color: #e0f0ff;
@@ -171,6 +190,9 @@
         <!-- Inner mask (white-out dead zone) -->
         <circle cx="209" cy="311" r="86"  fill="rgba(240,244,250,0.18)"/>
 
+        <!-- Halo rings around active stations (rendered by JS) -->
+        <g id="stn-halos"></g>
+
         <!-- Connection lines from Osaka to active stations (rendered by JS) -->
         <line id="sline-ok" opacity="0" stroke="#aaa" stroke-width="1.5"/>
         <line id="sline-yg" opacity="0" stroke="#aaa" stroke-width="1.5"/>
@@ -184,10 +206,15 @@
         <circle id="sdot-wk" cx="333.4" cy="51.8"  r="5" fill="#a0b0c8" opacity="0.5"/>
 
         <!-- Station labels -->
-        <text x="152" y="114" font-size="8.5" fill="#6070a0" id="slbl-ok">沖縄</text>
-        <text x="80"  y="381" font-size="8.5" fill="#6070a0" id="slbl-yg">鹿児島</text>
-        <text x="335" y="287" font-size="8.5" fill="#6070a0" id="slbl-to">東京</text>
-        <text x="338" y="49"  font-size="8.5" fill="#6070a0" id="slbl-wk">北海道</text>
+        <text x="152" y="112" font-size="9.5" fill="#6070a0" id="slbl-ok">沖縄</text>
+        <text x="80"  y="378" font-size="9.5" fill="#6070a0" id="slbl-yg">鹿児島</text>
+        <text x="335" y="285" font-size="9.5" fill="#6070a0" id="slbl-to">東京</text>
+        <text x="338" y="47"  font-size="9.5" fill="#6070a0" id="slbl-wk">北海道</text>
+        <!-- MHz value overlays -->
+        <text x="152" y="123" font-size="9" fill="#6070a0" id="smhz-ok" font-weight="bold"></text>
+        <text x="80"  y="390" font-size="9" fill="#6070a0" id="smhz-yg" font-weight="bold"></text>
+        <text x="335" y="296" font-size="9" fill="#6070a0" id="smhz-to" font-weight="bold"></text>
+        <text x="338" y="58"  font-size="9" fill="#6070a0" id="smhz-wk" font-weight="bold"></text>
 
         <!-- Osaka marker -->
         <circle cx="209" cy="311" r="4.5" fill="#1a3050"/>
@@ -300,38 +327,71 @@
       return { cls:'status-inactive', badge:'─', label:'静穏' };
     }
 
-    function renderMap(vals) {
-      for (const r of REGIONS) {
-        const k  = r.station;
-        const v  = vals[k];
-        const s  = STN_SVG[k];
-        const st = regionStatus(v, r.dist);
-        const inZone = r.dist >= SKIP_MIN && r.dist <= SKIP_MAX;
+    const SVG_NS = 'http://www.w3.org/2000/svg';
 
-        // Station dot
+    function renderMap(vals) {
+      // Clear halos
+      const halosGroup = document.getElementById('stn-halos');
+      halosGroup.innerHTML = '';
+
+      for (const r of REGIONS) {
+        const k      = r.station;
+        const v      = vals[k];
+        const s      = STN_SVG[k];
+        const inZone = r.dist >= SKIP_MIN && r.dist <= SKIP_MAX;
+        const active = inZone && v >= 5;
+        const chance = inZone && v >= 7;
+
+        // --- Station dot ---
         const dot = document.getElementById('sdot-' + k);
-        const dotR = v > 0 ? Math.min(16, 5 + v * 0.85) : 5;
+        const dotR = v > 0 ? Math.min(22, 5 + v * 1.5) : 5;
         dot.setAttribute('r', dotR);
         dot.setAttribute('fill', esColor(v));
-        dot.setAttribute('opacity', v > 0 ? '0.9' : '0.4');
-        dot.setAttribute('filter', (inZone && v >= 7) ? 'url(#stn-glow)' : '');
+        dot.setAttribute('opacity', v > 0 ? '1' : '0.35');
+        dot.setAttribute('filter', chance ? 'url(#stn-glow)' : '');
 
-        // Label
+        // --- Pulsing halo (only when active in zone) ---
+        if (active) {
+          const halo = document.createElementNS(SVG_NS, 'circle');
+          halo.setAttribute('cx', s.x);
+          halo.setAttribute('cy', s.y);
+          halo.setAttribute('r', dotR);
+          halo.setAttribute('fill', esColor(v));
+          halo.setAttribute('opacity', '0.45');
+          halo.classList.add('halo-ring');
+          // stagger: delay based on station index to avoid sync
+          halo.style.animationDelay = ({ ok:'0s', yg:'0.45s', to:'0.9s', wk:'1.35s' })[k];
+          halosGroup.appendChild(halo);
+        }
+
+        // --- Labels ---
         const lbl = document.getElementById('slbl-' + k);
-        lbl.setAttribute('fill', v >= 5 ? esColor(v) : '#6070a0');
-        lbl.setAttribute('font-weight', v >= 5 ? 'bold' : 'normal');
+        lbl.setAttribute('fill', active ? esColor(v) : '#8090a8');
+        lbl.setAttribute('font-weight', chance ? 'bold' : 'normal');
 
-        // Connection line from Osaka
+        const mhz = document.getElementById('smhz-' + k);
+        mhz.textContent = v > 0 ? v.toFixed(1) + ' MHz' : '';
+        mhz.setAttribute('fill', esColor(v));
+
+        // --- Connection line from Osaka ---
         const line = document.getElementById('sline-' + k);
-        if (inZone && v >= 5) {
+        if (active) {
           line.setAttribute('x1', OX); line.setAttribute('y1', OY);
           line.setAttribute('x2', s.x); line.setAttribute('y2', s.y);
           line.setAttribute('stroke', esColor(v));
-          line.setAttribute('stroke-width', v >= 9 ? '2.5' : v >= 7 ? '2' : '1.5');
-          line.setAttribute('stroke-dasharray', v >= 7 ? '' : '6,4');
-          line.setAttribute('opacity', Math.min(0.8, 0.3 + v * 0.06));
+          const sw = v >= 9 ? 4 : v >= 7 ? 3 : 2;
+          line.setAttribute('stroke-width', sw);
+          line.setAttribute('opacity', Math.min(0.9, 0.4 + v * 0.06));
+          if (chance) {
+            line.removeAttribute('stroke-dasharray');
+            line.classList.remove('line-march');
+          } else {
+            line.setAttribute('stroke-dasharray', '10 7');
+            line.classList.add('line-march');
+          }
         } else {
           line.setAttribute('opacity', '0');
+          line.classList.remove('line-march');
         }
       }
     }
