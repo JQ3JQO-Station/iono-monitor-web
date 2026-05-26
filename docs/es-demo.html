@@ -83,6 +83,17 @@
       padding: 10px 12px;
     }
     .map-title { font-size: 0.72rem; font-weight: 600; color: #5060a0; margin-bottom: 8px; }
+
+    /* view tabs */
+    .tab-bar { display: flex; gap: 5px; margin-bottom: 10px; }
+    .tab-btn {
+      flex: 1; padding: 8px 4px;
+      border: 2px solid #d0d8e8; border-radius: 8px;
+      background: #f0f4fa; color: #6070a0;
+      font-size: 0.78rem; font-weight: 700; cursor: pointer;
+      transition: background 0.2s, color 0.2s;
+    }
+    .tab-btn.active { background: #1a3050; color: #fff; border-color: #1a3050; }
     .map-wrapper { position: relative; width: 100%; aspect-ratio: 1; margin: 0 auto; }
     .map-wrapper svg { width: 100%; height: 100%; display: block; overflow: visible; }
     .island { fill: rgba(80,150,60,0.13); stroke: #60a840; stroke-width: 3px; stroke-linecap: round; stroke-linejoin: round; }
@@ -174,7 +185,11 @@
 
   <!-- map visualization -->
   <div class="map-section">
-    <div class="map-title">大阪 QTH からの Es スキップマップ</div>
+    <div class="tab-bar">
+      <button class="tab-btn active" id="tab-current" onclick="setTab('current')">現在</button>
+      <button class="tab-btn"        id="tab-predict" onclick="setTab('predict')">予測</button>
+    </div>
+    <div class="map-title" id="map-title">大阪 QTH からの Es スキップマップ</div>
     <div class="map-wrapper">
       <svg id="es-map" viewBox="0 0 424.69 424.87" xmlns="http://www.w3.org/2000/svg">
         <defs>
@@ -419,6 +434,18 @@
       return '#c02020';
     }
 
+    // View mode
+    let viewMode = 'current';
+    function setTab(mode) {
+      viewMode = mode;
+      document.getElementById('tab-current').classList.toggle('active', mode === 'current');
+      document.getElementById('tab-predict').classList.toggle('active', mode === 'predict');
+      document.getElementById('map-title').textContent =
+        mode === 'current' ? '大阪 QTH からの Es スキップマップ' : '次に開きそうな方向（予測）';
+      const idx = parseInt(document.getElementById('slider').value);
+      render(idx);
+    }
+
     // Centroid position tracking
     let prevCentroid = null;
 
@@ -434,19 +461,22 @@
       return wsum > 0 ? { x: wx / wsum, y: wy / wsum } : null;
     }
 
-    function renderMap(vals) {
+    function renderMap(vals, prevVals) {
       // Clear dynamic groups
       const halosGroup   = document.getElementById('stn-halos');
       const sectorsGroup = document.getElementById('stn-sectors');
       halosGroup.innerHTML   = '';
       sectorsGroup.innerHTML = '';
 
-      // --- Bb: Anime cloud shapes — update scale/opacity/color via CSS transition ---
+      const isPredictMode = viewMode === 'predict';
+
+      // --- Bb: Anime cloud shapes ---
+      // In predict mode: hide all clouds
       for (const r of REGIONS) {
         const k   = r.station;
         const v   = vals[k];
         const col = esColorCloud(v);
-        const active = col && v >= 3;
+        const active = !isPredictMode && col && v >= 3;
         const cld = document.getElementById('cld-' + k);
         const s   = STN_SVG[k];
         const scale = active ? Math.min(1.6, 0.40 + v * 0.095) : 0.05;
@@ -470,23 +500,7 @@
         dot.setAttribute('r', dotR);
         dot.setAttribute('fill', esColor(v));
         dot.setAttribute('opacity', v > 0 ? '1' : '0.30');
-        dot.setAttribute('filter', active ? 'url(#stn-glow)' : '');
-
-        // --- Pulsing halos (2 rings, staggered) ---
-        if (active) {
-          const delays = [0, 0.7];
-          delays.forEach((delay, i) => {
-            const halo = document.createElementNS(SVG_NS, 'circle');
-            halo.setAttribute('cx', s.x);
-            halo.setAttribute('cy', s.y);
-            halo.setAttribute('r', dotR * 1.5);
-            halo.setAttribute('fill', esColor(v));
-            halo.setAttribute('opacity', '0.5');
-            halo.classList.add('halo-ring');
-            halo.style.animationDelay = delay + 's';
-            halosGroup.appendChild(halo);
-          });
-        }
+        dot.setAttribute('filter', (!isPredictMode && active) ? 'url(#stn-glow)' : '');
 
         // --- Labels ---
         const lbl = document.getElementById('slbl-' + k);
@@ -497,66 +511,106 @@
         mhz.textContent = v > 0 ? v.toFixed(1) + ' MHz' : '';
         mhz.setAttribute('fill', esColor(v));
 
-        // --- Directional sector in skip zone (blurred, weather-radar style) ---
-        if (active) {
-          const d = sectorPath(OX, OY, 86, 267, STN_ANGLE[k], 28);
-          const sec = document.createElementNS(SVG_NS, 'path');
-          sec.setAttribute('d', d);
-          sec.setAttribute('fill', esColor(v));
-          sec.setAttribute('opacity', Math.min(0.80, 0.35 + v * 0.055));
-          sec.setAttribute('filter', 'url(#sector-blur)');
-          if (v >= 9 && inZone && chance) {
-            sec.classList.add('sector-strong');
+        if (isPredictMode) {
+          // --- PREDICT mode: show sector only if station is RISING ---
+          const prevV = prevVals ? prevVals[k] : null;
+          const delta = (prevV !== null && prevV !== undefined) ? v - prevV : 0;
+          const rising = delta > 0.3 && v >= 3;
+          if (rising && inZone) {
+            const d = sectorPath(OX, OY, 86, 267, STN_ANGLE[k], 34);
+            // Blurred base
+            const sec = document.createElementNS(SVG_NS, 'path');
+            sec.setAttribute('d', d);
+            sec.setAttribute('fill', '#4488ff');
+            sec.setAttribute('opacity', Math.min(0.55, 0.20 + delta * 0.06));
+            sec.setAttribute('filter', 'url(#sector-blur)');
+            sectorsGroup.appendChild(sec);
+            // Dashed outline overlay
+            const secLine = document.createElementNS(SVG_NS, 'path');
+            secLine.setAttribute('d', d);
+            secLine.setAttribute('fill', 'none');
+            secLine.setAttribute('stroke', '#2266dd');
+            secLine.setAttribute('stroke-width', '2.5');
+            secLine.setAttribute('stroke-dasharray', '8,5');
+            secLine.setAttribute('opacity', '0.8');
+            sectorsGroup.appendChild(secLine);
           }
-          sectorsGroup.appendChild(sec);
-
-          // Sharp overlay for strong sectors (v >= 9)
-          if (v >= 9 && inZone && chance) {
-            const secSharp = document.createElementNS(SVG_NS, 'path');
-            secSharp.setAttribute('d', d);
-            secSharp.setAttribute('fill', esColor(v));
-            secSharp.setAttribute('opacity', '0.30');
-            secSharp.classList.add('sector-strong');
-            sectorsGroup.appendChild(secSharp);
+        } else {
+          // --- CURRENT mode: existing sector logic ---
+          // Pulsing halos
+          if (active) {
+            const delays = [0, 0.7];
+            delays.forEach((delay) => {
+              const halo = document.createElementNS(SVG_NS, 'circle');
+              halo.setAttribute('cx', s.x);
+              halo.setAttribute('cy', s.y);
+              halo.setAttribute('r', dotR * 1.5);
+              halo.setAttribute('fill', esColor(v));
+              halo.setAttribute('opacity', '0.5');
+              halo.classList.add('halo-ring');
+              halo.style.animationDelay = delay + 's';
+              halosGroup.appendChild(halo);
+            });
+          }
+          if (active) {
+            const d = sectorPath(OX, OY, 86, 267, STN_ANGLE[k], 28);
+            const sec = document.createElementNS(SVG_NS, 'path');
+            sec.setAttribute('d', d);
+            sec.setAttribute('fill', esColor(v));
+            sec.setAttribute('opacity', Math.min(0.80, 0.35 + v * 0.055));
+            sec.setAttribute('filter', 'url(#sector-blur)');
+            if (v >= 9) sec.classList.add('sector-strong');
+            sectorsGroup.appendChild(sec);
+            if (v >= 9) {
+              const secSharp = document.createElementNS(SVG_NS, 'path');
+              secSharp.setAttribute('d', d);
+              secSharp.setAttribute('fill', esColor(v));
+              secSharp.setAttribute('opacity', '0.30');
+              secSharp.classList.add('sector-strong');
+              sectorsGroup.appendChild(secSharp);
+            }
           }
         }
       }
 
-      // --- Centroid marker: drifts for movement, flashes for new formation ---
+      // --- Centroid marker: only in current mode ---
       const cg   = document.getElementById('centroid-group');
-      const cent = calcCentroidSVG(vals);
-      if (cent) {
-        const jumpDist = prevCentroid
-          ? Math.hypot(cent.x - prevCentroid.x, cent.y - prevCentroid.y)
-          : 999;
-        if (jumpDist > 35) {
-          // Sudden jump: instant teleport + spawn flash
-          cg.style.transition = 'none';
-          cg.style.transform  = `translate(${cent.x}px, ${cent.y}px)`;
-          cg.style.opacity    = '1';
-          void cg.offsetWidth; // force reflow
-          cg.classList.remove('centroid-spawn');
-          void cg.offsetWidth;
-          cg.classList.add('centroid-spawn');
-          // Restore transition after flash
-          setTimeout(() => cg.style.transition = '', 50);
-        } else {
-          // Gradual: smooth CSS transition
-          cg.style.transition = '';
-          cg.style.transform  = `translate(${cent.x}px, ${cent.y}px)`;
-          cg.style.opacity    = '1';
-          cg.classList.remove('centroid-spawn');
-        }
-        prevCentroid = cent;
-      } else {
+      if (isPredictMode) {
         cg.style.opacity = '0';
-        prevCentroid = null;
+      } else {
+        const cent = calcCentroidSVG(vals);
+        if (cent) {
+          const jumpDist = prevCentroid
+            ? Math.hypot(cent.x - prevCentroid.x, cent.y - prevCentroid.y)
+            : 999;
+          if (jumpDist > 35) {
+            cg.style.transition = 'none';
+            cg.style.transform  = `translate(${cent.x}px, ${cent.y}px)`;
+            cg.style.opacity    = '1';
+            void cg.offsetWidth;
+            cg.classList.remove('centroid-spawn');
+            void cg.offsetWidth;
+            cg.classList.add('centroid-spawn');
+            setTimeout(() => cg.style.transition = '', 50);
+          } else {
+            cg.style.transition = '';
+            cg.style.transform  = `translate(${cent.x}px, ${cent.y}px)`;
+            cg.style.opacity    = '1';
+            cg.classList.remove('centroid-spawn');
+          }
+          prevCentroid = cent;
+        } else {
+          cg.style.opacity = '0';
+          prevCentroid = null;
+        }
       }
     }
 
     function render(idx) {
       const d = HISTORY[idx];
       const vals = { ok: fxVal(d.ok), yg: fxVal(d.yg), to: fxVal(d.to), wk: fxVal(d.wk) };
+      const pd = idx > 0 ? HISTORY[idx - 1] : null;
+      const prevVals = pd ? { ok: fxVal(pd.ok), yg: fxVal(pd.yg), to: fxVal(pd.to), wk: fxVal(pd.wk) } : null;
 
       // Time display
       document.getElementById('time-display').textContent = d.ts + ' JST';
@@ -570,7 +624,7 @@
       }
 
       // Map
-      renderMap(vals);
+      renderMap(vals, prevVals);
 
       // Regional list
       const listEl = document.getElementById('region-list');
