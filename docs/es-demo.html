@@ -141,8 +141,9 @@
 </head>
 <body>
   <header>
-    <h1>Es デモ再生</h1>
-    <span class="badge">2026-05-24</span>
+    <h1 id="page-title">Es デモ再生</h1>
+    <span class="badge" id="page-badge">2026-05-24</span>
+    <button id="live-btn" onclick="toggleLive()" style="margin-left:auto; background:#e05000; color:#fff; border:none; border-radius:8px; padding:6px 14px; font-size:0.8rem; font-weight:700; cursor:pointer;">● ライブ</button>
   </header>
 
   <div class="qth-bar">
@@ -156,7 +157,7 @@
       <input type="range" id="slider" min="0" max="8" step="1" value="0">
       <button id="play-btn">▶ 再生</button>
     </div>
-    <div class="time-note">10:00 〜 12:00 JST（15分間隔）</div>
+    <div class="time-note" id="time-note">10:00 〜 12:00 JST（15分間隔）</div>
   </div>
 
   <!-- raw FxEs values -->
@@ -680,6 +681,87 @@
     });
 
     render(0);
+
+    // --- Live mode ---
+    let liveMode = false;
+    let liveTimer = null;
+
+    function toggleLive() {
+      liveMode = !liveMode;
+      const btn = document.getElementById('live-btn');
+      const slider = document.getElementById('slider');
+      const playBtn = document.getElementById('play-btn');
+      if (liveMode) {
+        // Stop demo playback
+        if (playing) { clearInterval(timer); playing = false; playBtn.textContent = '▶ 再生'; }
+        slider.style.display = 'none';
+        playBtn.style.display = 'none';
+        btn.style.background = '#888';
+        btn.textContent = '■ デモへ戻る';
+        document.getElementById('page-title').textContent = 'Es ライブモニター';
+        document.getElementById('page-badge').textContent = 'LIVE';
+        document.getElementById('time-note').textContent = 'data.json より取得（15分間隔更新）';
+        fetchLive();
+        liveTimer = setInterval(fetchLive, 5 * 60 * 1000);
+      } else {
+        clearInterval(liveTimer);
+        slider.style.display = '';
+        playBtn.style.display = '';
+        btn.style.background = '#e05000';
+        btn.textContent = '● ライブ';
+        document.getElementById('page-title').textContent = 'Es デモ再生';
+        document.getElementById('page-badge').textContent = '2026-05-24';
+        document.getElementById('time-note').textContent = '10:00 〜 12:00 JST（15分間隔）';
+        render(parseInt(document.getElementById('slider').value));
+      }
+    }
+
+    async function fetchLive() {
+      try {
+        const res  = await fetch('./data.json?t=' + Date.now());
+        const data = await res.json();
+        const f = data.fxes;
+        const vals = {
+          ok: fxVal(f.ok),  yg: fxVal(f.yg),
+          to: fxVal(f.to),  wk: fxVal(f.wk),
+        };
+        const prevVals = {
+          ok: fxVal(f.ok_prev), yg: fxVal(f.yg_prev),
+          to: fxVal(f.to_prev), wk: fxVal(f.wk_prev),
+        };
+
+        document.getElementById('time-display').textContent = f.time + ' JST';
+
+        // Raw cells
+        for (const [k, v] of Object.entries(vals)) {
+          const el = document.getElementById('rv-' + k);
+          el.textContent = v > 0 ? v.toFixed(2) : '--';
+          el.style.color = esColor(v);
+          document.getElementById('cell-' + k).style.borderTopColor = esBorderColor(v);
+        }
+
+        renderMap(vals, prevVals);
+
+        // Regional list
+        const listEl = document.getElementById('region-list');
+        listEl.innerHTML = '';
+        for (const r of REGIONS) {
+          const v  = vals[r.station];
+          const st = regionStatus(v, r.dist);
+          const row = document.createElement('div');
+          row.className = 'region-row ' + st.cls;
+          row.innerHTML = `
+            <span class="rr-badge">${st.badge}</span>
+            <span class="rr-name">${r.name}</span>
+            <span class="rr-dist">${r.dir} ${r.dist}km</span>
+            <span class="rr-fxes" style="color:${esColor(v)}">${v > 0 ? v.toFixed(1)+'MHz' : '─'}</span>
+          `;
+          listEl.appendChild(row);
+        }
+      } catch(e) {
+        document.getElementById('time-display').textContent = '取得失敗';
+      }
+    }
   </script>
 </body>
 </html>
