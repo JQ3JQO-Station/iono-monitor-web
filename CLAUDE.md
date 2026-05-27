@@ -38,7 +38,7 @@
 - **主要ファイル**:
   - `docs/index.html` — メインWebアプリ（ブラウザ直接取得）
   - `scripts/fetch-data.js` — GitHub Actions用データ取得スクリプト
-  - `worker/index.js` — Cloudflare Worker（CORSプロキシ + Cron LINEアラート）
+  - `worker/index.js` — Cloudflare Worker（CORSプロキシ ※LINEアラートは停止済み）
   - `worker/wrangler.toml` — Worker設定（KVバインディング含む）
 
 ## アーキテクチャ
@@ -51,25 +51,25 @@ GitHub Actions (fetch-data.js)
 
 Cloudflare Worker Cron (worker/index.js) — 15分ごと独立実行
   → NICT直接取得
-  → 東京・鹿児島 FxEs >= 9.0 で LINE送信
-  → KV(IONO_STATE) で重複防止（TTL 2時間）
+  → ※LINEアラートは無料上限超過のため停止（2026-05-27）
+  → KV(IONO_STATE) は残存
 
 ブラウザ (docs/index.html)
   → Worker経由でNICT/NOAA直接取得（CORSプロキシ）
-  → アラートバナー表示のみ（LINE送信はWorkerが担当）
+  → ブラウザ側でアラートバナー表示（現在はブラウザアラートがメイン）
 ```
 
 ## 重要な設定値
 
 - **Worker URL**: https://iono-line-alert.yotsuzeki.workers.dev
 - **KV namespace**: IONO_STATE（ID: 74476cad97de42928c6c0fca0b7a62a4）
-- **LINE通知条件**: 東京(TO536) または 鹿児島(YG431) の FxEs >= 9.0
-- **LINE通知なし**: 沖縄・北海道はバナーのみ
+- **LINE通知**: ⚠️ 2026-05-27 停止済み（無料利用枠超過）→ ブラウザアラートに移行
 - **CORSプロキシ**: Worker の GET ?url= エンドポイント（corsproxy.io が403のため）
 
 ## 注意事項
 
 - Worker の変更は `cd worker && npx wrangler deploy` でデプロイが必要
 - GitHub Actions は push で自動実行される
-- LINE トークンは Long-lived（無期限）→ 更新不要
+- LINE通知は停止中。ブラウザ側アラートの実装状況を確認すること
 - `docs/color-sample.html` と `docs/manual.html` は補助ファイル（変更不要）
+- `docs/es-demo.html` — テストページ（本番には組み込まない）
