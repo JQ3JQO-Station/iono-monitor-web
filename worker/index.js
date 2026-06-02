@@ -312,34 +312,9 @@ async function checkAndAlert(env) {
     return;
   }
 
-  const lineWhitelist = [env.LINE_USER_ID, ...LINE_EXTRA];
+  // LINE通知は2026-06-02 完全停止（無料枠超過のため）
 
   if (triggered.length > 0) {
-    // ── LINE通知（ホワイトリスト3名のみ）
-    for (const r of recipients) {
-      if (!lineWhitelist.includes(r.lineId)) continue;
-      if (!r.activeDays.includes(jstDay)) continue;
-      if (jstHour < r.activeHours.start || jstHour >= r.activeHours.end) continue;
-
-      if (!r.cooldowns) r.cooldowns = {};
-      const newlyTriggered = triggered.filter(k =>
-        !r.cooldowns[k] || (now - r.cooldowns[k]) >= COOLDOWN_MS
-      );
-      if (newlyTriggered.length === 0) continue;
-
-      const detail  = newlyTriggered.map(k => `${names[k]}: ${fxes[k]}`).join(' / ');
-      const message = `⚠ CB DX Iono Monitor アラート\nFxEs >= 6.0 検出\n${detail}\n観測時刻: ${fxes.time ?? '--:--'} JST`;
-
-      const sent = await pushLine(r.lineId, message, env);
-      if (sent) {
-        for (const k of newlyTriggered) r.cooldowns[k] = now;
-        recipientsChanged = true;
-        console.log(`LINE sent to ${r.name}: ${newlyTriggered.join(', ')}`);
-      } else {
-        console.error(`LINE failed for ${r.name} — cooldown NOT set`);
-      }
-    }
-
     // ── Web Push通知（全購読者）
     await sendWebPushAlert(triggered, fxes, names, now, COOLDOWN_MS, env);
 
