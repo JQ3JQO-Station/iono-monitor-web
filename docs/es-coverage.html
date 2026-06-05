@@ -362,14 +362,14 @@
         if (!f) return;
 
         const ts = f.date + ' ' + f.time + ' JST';
-        document.getElementById('update-bar').firstChild.innerHTML =
+        document.getElementById('update-bar').children[0].innerHTML =
           '<span class="live-dot"></span>最終更新: ' + ts + '（15分ごとに自動更新）';
 
         render(f);
       } catch(e) {
         clearTimeout(tid);
         const msg = e.name === 'AbortError' ? 'タイムアウト — 再試行中...' : 'データ取得失敗 — 再試行中...';
-        document.getElementById('update-bar').firstChild.innerHTML =
+        document.getElementById('update-bar').children[0].innerHTML =
           '<span style="color:#c05000;">⚠ ' + msg + '</span>';
       }
     }
