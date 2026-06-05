@@ -309,8 +309,13 @@
     }
 
     async function fetchLive() {
+      const ctrl = new AbortController();
+      const tid  = setTimeout(() => ctrl.abort(), 8000);
       try {
-        const res  = await fetch('./data.json?t=' + Date.now());
+        const res  = await fetch('./data.json?t=' + Date.now(), {
+          cache: 'no-store', signal: ctrl.signal
+        });
+        clearTimeout(tid);
         const data = await res.json();
         const f    = data.fxes;
         if (!f) return;
@@ -321,8 +326,10 @@
 
         render(f);
       } catch(e) {
+        clearTimeout(tid);
+        const msg = e.name === 'AbortError' ? 'タイムアウト — 再試行中...' : 'データ取得失敗 — 再試行中...';
         document.getElementById('update-bar').firstChild.innerHTML =
-          '<span style="color:#c05000;">⚠ データ取得失敗 — 再試行中...</span>';
+          '<span style="color:#c05000;">⚠ ' + msg + '</span>';
       }
     }
 
