@@ -193,6 +193,48 @@
     const KM_PER_PX = 5.23;
     const SVG_NS = 'http://www.w3.org/2000/svg';
 
+    // Cloudflare Worker CORS proxy（monitor.html と同じ取得元）
+    const PROXY    = 'https://iono-line-alert.yotsuzeki.workers.dev/?url=';
+    const FXES_URL = 'https://wdc.nict.go.jp/Ionosphere/realtime/fxEs/latest-fxEs.html';
+
+    function parseFxEs(html) {
+      let plain = '';
+      let inTag = false;
+      for (let i = 0; i < html.length; i++) {
+        const c = html[i];
+        if (c === '<') { inTag = true; continue; }
+        if (c === '>') { inTag = false; continue; }
+        if (inTag) continue;
+        if (c === '\r') continue;
+        if (c === '\n' || c === '\t') { plain += '\n'; continue; }
+        const code = c.charCodeAt(0);
+        plain += (code >= 32 && code <= 126) ? c : ' ';
+      }
+      const tokens = plain.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+      const isDate = s => /^\d{4}\/\d{2}\/\d{2}$/.test(s);
+      const isTime = s => /^\d{2}:\d{2}$/.test(s);
+      const isFx   = s => /^-+$/.test(s) || /^\d*\.?\d+$/.test(s);
+      const toVal  = s => /^-+$/.test(s) ? null : parseFloat(s);
+      const rows   = [];
+      for (let i = 0; i < tokens.length - 4; i++) {
+        const sp = tokens[i].indexOf(' ');
+        if (sp <= 0) continue;
+        const d = tokens[i].substring(0, sp).trim();
+        const t = tokens[i].substring(sp + 1).trim();
+        if (isDate(d) && isTime(t) &&
+            isFx(tokens[i+1]) && isFx(tokens[i+2]) &&
+            isFx(tokens[i+3]) && isFx(tokens[i+4])) {
+          rows.push({ date: d, time: t,
+            ok: toVal(tokens[i+1]), yg: toVal(tokens[i+2]),
+            to: toVal(tokens[i+3]), wk: toVal(tokens[i+4]) });
+          i += 4;
+        }
+      }
+      if (rows.length === 0) return null;
+      rows.sort((a, b) => (a.date + a.time) < (b.date + b.time) ? -1 : 1);
+      return rows[rows.length - 1];
+    }
+
     function fxToFo(fx) { return Math.max(0, fx - 0.6); }
 
     function foesInfo(fo) {
@@ -312,12 +354,11 @@
       const ctrl = new AbortController();
       const tid  = setTimeout(() => ctrl.abort(), 8000);
       try {
-        const res  = await fetch('./data.json?t=' + Date.now(), {
-          cache: 'no-store', signal: ctrl.signal
-        });
+        const url = PROXY + encodeURIComponent(FXES_URL + '?t=' + Date.now());
+        const res  = await fetch(url, { cache: 'no-store', signal: ctrl.signal });
         clearTimeout(tid);
-        const data = await res.json();
-        const f    = data.fxes;
+        const html = await res.text();
+        const f    = parseFxEs(html);
         if (!f) return;
 
         const ts = f.date + ' ' + f.time + ' JST';
