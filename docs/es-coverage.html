@@ -70,6 +70,15 @@
       width: 30px; height: 12px; border-radius: 6px; flex-shrink: 0;
     }
     .legend-note { font-size: 0.53rem; color: #a0b0c8; margin-top: 5px; }
+
+    #refresh-btn {
+      background: #3a7bd5; color: #fff; border: none;
+      border-radius: 8px; padding: 6px 14px;
+      font-size: 0.78rem; font-weight: 700; cursor: pointer;
+      margin-left: auto;
+    }
+    #refresh-btn:active { background: #1a5ba5; }
+    #refresh-btn:disabled { background: #a0b0c8; cursor: default; }
   </style>
 </head>
 <body>
@@ -79,8 +88,9 @@
     <span class="badge">● LIVE</span>
   </header>
 
-  <div class="update-bar" id="update-bar">
-    <span class="live-dot"></span>読み込み中...
+  <div class="update-bar" id="update-bar" style="display:flex; align-items:center;">
+    <span><span class="live-dot"></span>読み込み中...</span>
+    <button id="refresh-btn" onclick="manualRefresh()">↻ 更新</button>
   </div>
 
   <!-- 4局 ステータスカード -->
@@ -306,14 +316,23 @@
         if (!f) return;
 
         const ts = f.date + ' ' + f.time + ' JST';
-        document.getElementById('update-bar').innerHTML =
+        document.getElementById('update-bar').firstChild.innerHTML =
           '<span class="live-dot"></span>最終更新: ' + ts + '（15分ごとに自動更新）';
 
         render(f);
       } catch(e) {
-        document.getElementById('update-bar').innerHTML =
+        document.getElementById('update-bar').firstChild.innerHTML =
           '<span style="color:#c05000;">⚠ データ取得失敗 — 再試行中...</span>';
       }
+    }
+
+    async function manualRefresh() {
+      const btn = document.getElementById('refresh-btn');
+      btn.disabled = true;
+      btn.textContent = '取得中...';
+      await fetchLive();
+      btn.disabled = false;
+      btn.textContent = '↻ 更新';
     }
 
     fetchLive();
