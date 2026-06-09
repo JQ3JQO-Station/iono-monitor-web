@@ -85,13 +85,12 @@
       { id: 'ok', name: '大宜味',  lat: 26.6, lon: 128.2 },
     ];
 
-    // 北海道東端(145.8°E)がキャンバス右端に収まるスケール上限 ≈ 946
-    // 余白を持たせて scale=900, 回転 -13.7°（時計回り）
+    // ロール回転なし（angle廃止）
+    // center=[133, 35], scale=850 でJapan+台湾を収める
     const projection = d3.geoEquirectangular()
-      .scale(900)
-      .center([131.4, 34.2])
-      .translate([W / 2, H / 2])
-      .angle(-13.7);
+      .scale(850)
+      .center([133, 35])
+      .translate([W / 2, H / 2]);
 
     const geoPath = d3.geoPath().projection(projection);
     const svg = d3.select('#map');
