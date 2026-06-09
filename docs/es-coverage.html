@@ -102,6 +102,9 @@
         // チルト後の地図をキャンバスより少し広い領域にフィットさせて拡大（端は若干クリップ）
         const pad = -30;
         projection.fitExtent([[pad, pad], [W - pad, H - pad]], { type: 'FeatureCollection', features: targets });
+        // 台湾が下端に入るよう上に40pxずらす
+        const [tx, ty] = projection.translate();
+        projection.translate([tx, ty - 40]);
 
         // 国土輪郭
         svg.selectAll('path.land')
