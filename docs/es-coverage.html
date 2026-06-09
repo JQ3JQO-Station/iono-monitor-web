@@ -83,13 +83,15 @@
       { id: 'ok', name: '大宜味',  lat: 26.6, lon: 128.2 },
     ];
 
-    // lon 118-147°E (29°) を 390px 幅に収めるスケール（台湾を含む）
-    // scale = 390 / (29 × π/180) ≈ 771
-    // center = [132.5, 33.7]
+    // 台湾(121°E,23°N)→北海道(141.7°E,45.4°N) を
+    // キャンバス左下→右上の対角線に合わせて回転・拡大
+    // 中心: 両端の地理的中点 [131.4, 34.2]
+    // 回転角: -13.7°（時計回り） → angle()は反時計が正なので -13.7
     const projection = d3.geoEquirectangular()
-      .scale(771)
-      .center([132.5, 33.7])
-      .translate([W / 2, H / 2]);
+      .scale(1400)
+      .center([131.4, 34.2])
+      .translate([W / 2, H / 2])
+      .angle(-13.7);
 
     const geoPath = d3.geoPath().projection(projection);
     const svg = d3.select('#map');
