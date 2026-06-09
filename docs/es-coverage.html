@@ -83,17 +83,13 @@
       { id: 'ok', name: '大宜味',  lat: 26.6, lon: 128.2 },
     ];
 
-    // 表示範囲を定義するバウンディングボックス
-    const EXTENT_BBOX = {
-      type: 'Feature',
-      geometry: {
-        type: 'Polygon',
-        coordinates: [[[120, 21.9], [146, 21.9], [146, 45.5], [120, 45.5], [120, 21.9]]]
-      }
-    };
-
+    // lon 124-146°E (22°) を 390px 幅に収めるスケール
+    // scale = 390 / (22 × π/180) ≈ 1016
+    // center = [135, 33.7] (日本中心付近)
     const projection = d3.geoEquirectangular()
-      .fitSize([W, H], EXTENT_BBOX);
+      .scale(1016)
+      .center([135, 33.7])
+      .translate([W / 2, H / 2]);
 
     const geoPath = d3.geoPath().projection(projection);
     const svg = d3.select('#map');
