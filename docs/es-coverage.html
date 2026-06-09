@@ -85,9 +85,9 @@
       { id: 'ok', name: '大宜味',  lat: 26.6, lon: 128.2 },
     ];
 
-    // angle(-20) でチルト後、D3のfitSizeで自動スケール計算
+    // angle(+20) で左回転後、D3のfitSizeで自動スケール計算
     const projection = d3.geoEquirectangular()
-      .angle(-20);
+      .angle(20);
 
     const geoPath = d3.geoPath().projection(projection);
     const svg = d3.select('#map');
