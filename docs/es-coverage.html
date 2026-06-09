@@ -4,387 +4,140 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Es 影響圏マップ</title>
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/topojson-client@3/dist/topojson-client.min.js"></script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
       background: #edf1f7;
-      color: #1a2838;
       font-family: -apple-system, 'Helvetica Neue', sans-serif;
-      padding: 10px;
       display: flex;
       flex-direction: column;
+      align-items: center;
+      padding: 10px;
       gap: 8px;
     }
-    header { display: flex; align-items: center; gap: 8px; padding: 4px 0; }
+    header {
+      width: 390px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 4px 0;
+    }
     header h1 { font-size: 1rem; font-weight: 700; color: #1a3050; }
-    .badge { background: #d04000; color: #fff; font-size: 0.58rem; font-weight: 700; padding: 2px 8px; border-radius: 10px; }
-
-    .live-dot {
-      display: inline-block; width: 7px; height: 7px;
-      border-radius: 50%; background: #28a838; margin-right: 4px;
-      animation: blink 2s ease-in-out infinite;
-    }
-    @keyframes blink { 0%,100% { opacity:1; } 50% { opacity:0.25; } }
-
-    .update-bar {
-      font-size: 0.62rem; color: #8090a8;
-      background: #fff; border-radius: 8px; padding: 6px 10px;
+    .badge {
+      background: #d04000; color: #fff;
+      font-size: 0.58rem; font-weight: 700;
+      padding: 2px 8px; border-radius: 10px;
     }
 
-    /* Station cards */
-    .cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
-    .card {
-      background: #fff; border-radius: 10px;
-      box-shadow: 0 1px 3px rgba(0,20,60,0.08);
-      padding: 8px 5px; text-align: center;
-      border-top: 4px solid #d0d8e8;
-      transition: border-color 0.5s;
-    }
-    .card-name  { font-size: 0.52rem; color: #8090a8; margin-bottom: 2px; }
-    .card-fxes  { font-size: 1.1rem; font-weight: 800; line-height: 1.1; transition: color 0.5s; }
-    .card-unit  { font-size: 0.45rem; color: #8090a8; }
-    .card-foes  { font-size: 0.58rem; color: #6070a0; margin-top: 2px; }
-    .card-status { font-size: 0.58rem; font-weight: 700; margin-top: 3px; min-height: 1em; }
-
-    /* Map */
-    .map-section {
-      background: #fff; border-radius: 12px;
+    #map-container {
+      width: 390px;
+      background: #fff;
+      border-radius: 12px;
       box-shadow: 0 1px 4px rgba(0,20,60,0.10);
-      padding: 10px 12px;
+      overflow: hidden;
     }
-    .map-title { font-size: 0.65rem; color: #5060a0; font-weight: 600; margin-bottom: 6px; }
-    .map-wrapper { position: relative; width: 100%; aspect-ratio: 1; margin: 0 auto; }
-    .map-wrapper svg { width: 100%; height: 100%; display: block; overflow: hidden; }
-    .island { fill: rgba(80,150,60,0.13); stroke: #60a840; stroke-width: 3px; stroke-linecap: round; stroke-linejoin: round; }
+    #map-container svg {
+      display: block;
+    }
 
-    /* Legend */
-    .legend {
-      background: #fff; border-radius: 10px;
-      box-shadow: 0 1px 3px rgba(0,20,60,0.08);
-      padding: 9px 12px;
+    .land {
+      fill: rgba(80,150,60,0.10);
+      stroke: #60a840;
+      stroke-width: 1.2;
+      stroke-linejoin: round;
     }
-    .legend-title { font-size: 0.6rem; font-weight: 700; color: #1a3050; margin-bottom: 6px; }
-    .legend-rows { display: flex; flex-direction: column; gap: 4px; }
-    .legend-row { display: flex; align-items: center; gap: 7px; font-size: 0.58rem; color: #5060a0; }
-    .legend-swatch {
-      width: 30px; height: 12px; border-radius: 6px; flex-shrink: 0;
+    .stn-dot {
+      fill: #0070d0;
+      stroke: #fff;
+      stroke-width: 1.5;
     }
-    .legend-note { font-size: 0.53rem; color: #a0b0c8; margin-top: 5px; }
-
-    #refresh-btn {
-      background: #3a7bd5; color: #fff; border: none;
-      border-radius: 8px; padding: 6px 14px;
-      font-size: 0.78rem; font-weight: 700; cursor: pointer;
-      margin-left: auto;
+    .stn-label {
+      font-size: 11px;
+      font-weight: 700;
+      fill: #1a3050;
+      paint-order: stroke;
+      stroke: rgba(255,255,255,0.9);
+      stroke-width: 3;
     }
-    #refresh-btn:active { background: #1a5ba5; }
-    #refresh-btn:disabled { background: #a0b0c8; cursor: default; }
   </style>
 </head>
 <body>
-
   <header>
     <h1>Es 影響圏マップ</h1>
     <span class="badge">● LIVE</span>
   </header>
 
-  <div class="update-bar" id="update-bar" style="display:flex; align-items:center;">
-    <span><span class="live-dot"></span>読み込み中...</span>
-    <button id="refresh-btn" onclick="manualRefresh()">↻ 更新</button>
-  </div>
-
-  <!-- 4局 ステータスカード -->
-  <div class="cards">
-    <div class="card" id="card-ok">
-      <div class="card-name">沖縄 OK</div>
-      <div class="card-fxes" id="fxes-ok">--</div>
-      <div class="card-unit">MHz (FxEs)</div>
-      <div class="card-foes" id="foes-ok">foEs --</div>
-      <div class="card-status" id="status-ok">─</div>
-    </div>
-    <div class="card" id="card-yg">
-      <div class="card-name">鹿児島 YG</div>
-      <div class="card-fxes" id="fxes-yg">--</div>
-      <div class="card-unit">MHz (FxEs)</div>
-      <div class="card-foes" id="foes-yg">foEs --</div>
-      <div class="card-status" id="status-yg">─</div>
-    </div>
-    <div class="card" id="card-to">
-      <div class="card-name">東京 TO</div>
-      <div class="card-fxes" id="fxes-to">--</div>
-      <div class="card-unit">MHz (FxEs)</div>
-      <div class="card-foes" id="foes-to">foEs --</div>
-      <div class="card-status" id="status-to">─</div>
-    </div>
-    <div class="card" id="card-wk">
-      <div class="card-name">北海道 WK</div>
-      <div class="card-fxes" id="fxes-wk">--</div>
-      <div class="card-unit">MHz (FxEs)</div>
-      <div class="card-foes" id="foes-wk">foEs --</div>
-      <div class="card-status" id="status-wk">─</div>
-    </div>
-  </div>
-
-  <!-- Map -->
-  <div class="map-section">
-    <div class="map-title">各観測局を中心とした Es 影響圏（推定）</div>
-    <div class="map-wrapper">
-      <svg id="es-map" viewBox="0 0 424.69 424.87" xmlns="http://www.w3.org/2000/svg">
-        <defs>
-          <clipPath id="map-clip">
-            <rect x="0" y="0" width="424.69" height="424.87"/>
-          </clipPath>
-          <filter id="stn-glow" x="-100%" y="-100%" width="300%" height="300%">
-            <feGaussianBlur stdDeviation="5" result="blur"/>
-            <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
-          </filter>
-        </defs>
-
-        <!-- Japan islands -->
-        <path class="island" d="M124.91,55.12l-7.07-7.07c-2.06-2.06-5.39-2.06-7.45,0l-13.85,13.85c-1.92,1.92-5,2.07-7.09.33l-1.7-1.41c-2.24-1.86-5.56-1.55-7.42.69l-1.73,2.09c-1.86,2.24-1.55,5.56.69,7.42h0c2.39,1.98,2.55,5.59.36,7.78l-18.41,18.41v21.71c0,2.91,2.36,5.27,5.27,5.27h6.94c2.91,0,5.27-2.36,5.27-5.27v-7.97c0-1.4.56-2.74,1.54-3.73l44.65-44.65c2.06-2.06,2.06-5.39,0-7.45Z"/>
-        <path class="island" d="M79.63,422.87H27.31c-4.6,0-8.32-3.73-8.32-8.32v-55.3c0-3.51-2.2-6.64-5.5-7.83l-5.98-2.15c-3.3-1.19-5.5-4.32-5.5-7.83v-36.36c0-4.6,3.73-8.32,8.32-8.32h69.31c4.6,0,8.32,3.73,8.32,8.32v109.47c0,4.6-3.73,8.32-8.32,8.32Z"/>
-        <rect class="island" x="100.14" y="338.81" width="87.94" height="42.12" rx="3.75" ry="3.75"/>
-        <path class="island" d="M373.42,157.68v166.51c0,3.35-2.72,6.06-6.06,6.06h-21.09c-3.35,0-6.06,2.72-6.06,6.06v12.93c0,3.35-2.72,6.06-6.06,6.06h-72.33c-3.35,0-6.06,2.72-6.06,6.06v12.93c0,3.35-2.72,6.06-6.06,6.06h-42.77c-3.35,0-6.06-2.72-6.06-6.06v-41.64c0-3.35-2.72-6.06-6.06-6.06h-88.66c-3.35,0-6.06-2.72-6.06-6.06v-51.5c0-3.35,2.72-6.06,6.06-6.06h143.83c3.35,0,6.06-2.72,6.06-6.06v-37.98c0-3.35,2.72-6.06,6.06-6.06h29.26c3.35,0,6.06-2.72,6.06-6.06v-76.55c0-3.35,2.72-6.06,6.06-6.06h63.88c3.35,0,6.06,2.72,6.06,6.06v27.44Z"/>
-        <path class="island" d="M357.94,2h56.11c4.77,0,8.64,3.87,8.64,8.64v83.23c0,4.77-3.87,8.64-8.64,8.64h-75.98c-2.24,0-4.4.87-6.01,2.43l-3.7,3.59c-1.61,1.56-3.76,2.43-6.01,2.43h-15.74c-4.77,0-8.64-3.87-8.64-8.64V10.64c0-4.77,3.87-8.64,8.64-8.64h51.33Z"/>
-
-        <!-- Coverage circles (rendered by JS, clipped to map) -->
-        <g id="coverage-circles" clip-path="url(#map-clip)"></g>
-
-        <!-- Station overlays (rendered by JS, not clipped) -->
-        <g id="station-overlays"></g>
-
-      </svg>
-    </div>
-  </div>
-
-  <!-- Legend -->
-  <div class="legend">
-    <div class="legend-title">Es 影響圏の目安（foEs = FxEs − 0.6 MHz で換算）</div>
-    <div class="legend-rows">
-      <div class="legend-row">
-        <div class="legend-swatch" style="background:rgba(48,144,208,0.30); border:1.5px solid #3090d0;"></div>
-        foEs 5〜8 MHz：局所的（〜200km）— 27MHz は開きにくい
-      </div>
-      <div class="legend-row">
-        <div class="legend-swatch" style="background:rgba(180,140,0,0.30); border:1.5px solid #b08c00;"></div>
-        foEs 8〜10 MHz：警戒域（〜700km）— 27MHz 開通開始
-      </div>
-      <div class="legend-row">
-        <div class="legend-swatch" style="background:rgba(200,80,0,0.30); border:1.5px solid #c85000;"></div>
-        foEs 10〜12 MHz：強力（〜900km）— 27MHz 安定開通
-      </div>
-      <div class="legend-row">
-        <div class="legend-swatch" style="background:rgba(192,32,32,0.30); border:1.5px solid #c02020;"></div>
-        foEs ≥ 12 MHz：大爆発（1000km超）— 全面オープン
-      </div>
-    </div>
-    <div class="legend-note">※ 影響圏は推定値です。重なり合う部分は複数局のEsが重複している可能性があります。</div>
+  <div id="map-container">
+    <svg id="map" width="390" height="700"></svg>
   </div>
 
   <script>
-    const STN = {
-      ok: { x:  98.5, y:  85.7, name: '沖縄',   maxRpx: 100 },  // 地図表現上の制約で本州にかからないよう制限
-      yg: { x:  57.9, y: 401.0, name: '鹿児島' },
-      to: { x: 329.9, y: 321.8, name: '東京' },
-      wk: { x: 365.4, y:  51.8, name: '北海道' },
+    const W = 390, H = 700;
+
+    const STATIONS = [
+      { id: 'wk', name: '稚内',    lat: 45.4, lon: 141.7 },
+      { id: 'to', name: '国分寺',  lat: 35.7, lon: 139.5 },
+      { id: 'yg', name: '山川',    lat: 31.2, lon: 130.6 },
+      { id: 'ok', name: '大宜味',  lat: 26.6, lon: 128.2 },
+    ];
+
+    // 表示範囲を定義するバウンディングボックス
+    const EXTENT_BBOX = {
+      type: 'Feature',
+      geometry: {
+        type: 'Polygon',
+        coordinates: [[[120, 21.9], [146, 21.9], [146, 45.5], [120, 45.5], [120, 21.9]]]
+      }
     };
 
-    // 1 SVG pixel ≈ 5.23 km  (from es-demo: 450km = 86px reference)
-    const KM_PER_PX = 5.23;
-    const SVG_NS = 'http://www.w3.org/2000/svg';
+    const projection = d3.geoEquirectangular()
+      .fitSize([W, H], EXTENT_BBOX);
 
-    // Cloudflare Worker CORS proxy（monitor.html と同じ取得元）
-    const PROXY    = 'https://iono-line-alert.yotsuzeki.workers.dev/?url=';
-    const FXES_URL = 'https://wdc.nict.go.jp/Ionosphere/realtime/fxEs/latest-fxEs.html';
+    const geoPath = d3.geoPath().projection(projection);
+    const svg = d3.select('#map');
 
-    function parseFxEs(html) {
-      let plain = '';
-      let inTag = false;
-      for (let i = 0; i < html.length; i++) {
-        const c = html[i];
-        if (c === '<') { inTag = true; continue; }
-        if (c === '>') { inTag = false; continue; }
-        if (inTag) continue;
-        if (c === '\r') continue;
-        if (c === '\n' || c === '\t') { plain += '\n'; continue; }
-        const code = c.charCodeAt(0);
-        plain += (code >= 32 && code <= 126) ? c : ' ';
-      }
-      const tokens = plain.split('\n').map(l => l.trim()).filter(l => l.length > 0);
-      const isDate = s => /^\d{4}\/\d{2}\/\d{2}$/.test(s);
-      const isTime = s => /^\d{2}:\d{2}$/.test(s);
-      const isFx   = s => /^-+$/.test(s) || /^\d*\.?\d+$/.test(s);
-      const toVal  = s => /^-+$/.test(s) ? null : parseFloat(s);
-      const rows   = [];
-      for (let i = 0; i < tokens.length - 4; i++) {
-        const sp = tokens[i].indexOf(' ');
-        if (sp <= 0) continue;
-        const d = tokens[i].substring(0, sp).trim();
-        const t = tokens[i].substring(sp + 1).trim();
-        if (isDate(d) && isTime(t) &&
-            isFx(tokens[i+1]) && isFx(tokens[i+2]) &&
-            isFx(tokens[i+3]) && isFx(tokens[i+4])) {
-          rows.push({ date: d, time: t,
-            ok: toVal(tokens[i+1]), yg: toVal(tokens[i+2]),
-            to: toVal(tokens[i+3]), wk: toVal(tokens[i+4]) });
-          i += 4;
-        }
-      }
-      if (rows.length === 0) return null;
-      rows.sort((a, b) => (a.date + a.time) < (b.date + b.time) ? -1 : 1);
-      return rows[rows.length - 1];
-    }
+    // 地図読み込み・描画
+    d3.json('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-50m.json')
+      .then(world => {
+        const countries = topojson.feature(world, world.objects.countries);
+        // Japan = 392, Taiwan = 158
+        const targets = countries.features.filter(d => [392, 158].includes(+d.id));
 
-    function fxToFo(fx) { return Math.max(0, fx - 0.6); }
+        // 国土輪郭
+        svg.selectAll('path.land')
+          .data(targets)
+          .join('path')
+          .attr('class', 'land')
+          .attr('d', geoPath);
 
-    function foesInfo(fo) {
-      if (fo < 5)  return { r: 0,    fill: null,                   stroke: null,      status: '─ 静穏',                 statusColor: '#a0b0c8', border: '#d0d8e8' };
-      if (fo < 8)  return { r:  200, fill: 'rgba(48,144,208,0.22)',  stroke: '#3090d0', status: '弱い（局所的）',           statusColor: '#3090d0', border: '#3090d0' };
-      if (fo < 10) return { r:  700, fill: 'rgba(180,140,0,0.22)',   stroke: '#b08c00', status: '⚠ 警戒域 27MHz 開通開始',  statusColor: '#9a7800', border: '#b08c00' };
-      if (fo < 12) return { r:  900, fill: 'rgba(200,80,0,0.24)',    stroke: '#c85000', status: '✅ 強力 27MHz 安定開通',    statusColor: '#c85000', border: '#c85000' };
-      return             { r: 1200, fill: 'rgba(192,32,32,0.26)',    stroke: '#c02020', status: '🔴 大爆発 全面オープン',    statusColor: '#c02020', border: '#c02020' };
-    }
+        // 観測点ドット
+        svg.selectAll('circle.stn-dot')
+          .data(STATIONS)
+          .join('circle')
+          .attr('class', 'stn-dot')
+          .attr('cx', d => projection([d.lon, d.lat])[0])
+          .attr('cy', d => projection([d.lon, d.lat])[1])
+          .attr('r', 5);
 
-    function fxColor(fx) {
-      if (fx <= 0)   return '#a0b0c8';
-      const fo = fxToFo(fx);
-      if (fo < 5)    return '#0098c0';
-      if (fo < 8)    return '#3090d0';
-      if (fo < 10)   return '#b08c00';
-      if (fo < 12)   return '#c85000';
-      return '#c02020';
-    }
-
-    function parseFx(v) {
-      if (v === '--' || v === null || v === undefined) return 0;
-      return parseFloat(v) || 0;
-    }
-
-    function render(fxData) {
-      const circles  = document.getElementById('coverage-circles');
-      const overlays = document.getElementById('station-overlays');
-      circles.innerHTML  = '';
-      overlays.innerHTML = '';
-
-      for (const [k, s] of Object.entries(STN)) {
-        const fx  = parseFx(fxData[k]);
-        const fo  = fx > 0 ? fxToFo(fx) : 0;
-        const inf = foesInfo(fo);
-
-        // — カード更新 —
-        const fxEl   = document.getElementById('fxes-' + k);
-        const foEl   = document.getElementById('foes-' + k);
-        const stEl   = document.getElementById('status-' + k);
-        const cardEl = document.getElementById('card-' + k);
-
-        fxEl.textContent = fx > 0 ? fx.toFixed(1) : '--';
-        fxEl.style.color = fxColor(fx);
-        foEl.textContent = fx > 0 ? 'foEs ' + fo.toFixed(1) + ' MHz' : 'foEs --';
-        stEl.textContent = inf.status;
-        stEl.style.color = inf.statusColor;
-        cardEl.style.borderTopColor = inf.border;
-
-        // — 影響圏の円 —
-        if (inf.r > 0 && inf.fill) {
-          const rPx = Math.min(inf.r / KM_PER_PX, s.maxRpx ?? Infinity);
-
-          // 塗りつぶし（半透明）
-          const cFill = document.createElementNS(SVG_NS, 'circle');
-          cFill.setAttribute('cx', s.x);
-          cFill.setAttribute('cy', s.y);
-          cFill.setAttribute('r',  rPx);
-          cFill.setAttribute('fill', inf.fill);
-          circles.appendChild(cFill);
-
-          // 境界線（破線）
-          const cStroke = document.createElementNS(SVG_NS, 'circle');
-          cStroke.setAttribute('cx', s.x);
-          cStroke.setAttribute('cy', s.y);
-          cStroke.setAttribute('r',  rPx);
-          cStroke.setAttribute('fill', 'none');
-          cStroke.setAttribute('stroke', inf.stroke);
-          cStroke.setAttribute('stroke-width', '2');
-          cStroke.setAttribute('stroke-opacity', '0.8');
-          cStroke.setAttribute('stroke-dasharray', '8,5');
-          circles.appendChild(cStroke);
-        }
-
-        // — 観測局ドット（圏の上に描画）—
-        const dotR = fx > 0 ? Math.min(12, 5 + fx * 0.35) : 5;
-        const dot  = document.createElementNS(SVG_NS, 'circle');
-        dot.setAttribute('cx', s.x);
-        dot.setAttribute('cy', s.y);
-        dot.setAttribute('r',  dotR);
-        dot.setAttribute('fill', fxColor(fx));
-        dot.setAttribute('stroke', '#fff');
-        dot.setAttribute('stroke-width', '2');
-        if (fx > 0 && fo >= 8) dot.setAttribute('filter', 'url(#stn-glow)');
-        overlays.appendChild(dot);
-
-        // — 局名ラベル —
-        const lbl = document.createElementNS(SVG_NS, 'text');
-        lbl.setAttribute('x', s.x + dotR + 3);
-        lbl.setAttribute('y', s.y - 3);
-        lbl.setAttribute('font-size', '10.5');
-        lbl.setAttribute('font-weight', fo >= 8 ? 'bold' : 'normal');
-        lbl.setAttribute('fill', fxColor(fx));
-        lbl.setAttribute('stroke', 'rgba(255,255,255,0.92)');
-        lbl.setAttribute('stroke-width', '3.5');
-        lbl.setAttribute('paint-order', 'stroke');
-        lbl.textContent = s.name;
-        overlays.appendChild(lbl);
-
-        // — MHz値ラベル —
-        if (fx > 0) {
-          const mhz = document.createElementNS(SVG_NS, 'text');
-          mhz.setAttribute('x', s.x + dotR + 3);
-          mhz.setAttribute('y', s.y + 8);
-          mhz.setAttribute('font-size', '8.5');
-          mhz.setAttribute('fill', fxColor(fx));
-          mhz.setAttribute('stroke', 'rgba(255,255,255,0.9)');
-          mhz.setAttribute('stroke-width', '3');
-          mhz.setAttribute('paint-order', 'stroke');
-          mhz.textContent = fx.toFixed(1) + ' MHz';
-          overlays.appendChild(mhz);
-        }
-      }
-    }
-
-    async function fetchLive() {
-      const ctrl = new AbortController();
-      const tid  = setTimeout(() => ctrl.abort(), 8000);
-      try {
-        const url = PROXY + encodeURIComponent(FXES_URL + '?t=' + Date.now());
-        const res  = await fetch(url, { cache: 'no-store', signal: ctrl.signal });
-        clearTimeout(tid);
-        const html = await res.text();
-        const f    = parseFxEs(html);
-        if (!f) return;
-
-        const ts = f.date + ' ' + f.time + ' JST';
-        document.getElementById('update-bar').children[0].innerHTML =
-          '<span class="live-dot"></span>最終更新: ' + ts + '（15分ごとに自動更新）';
-
-        render(f);
-      } catch(e) {
-        clearTimeout(tid);
-        const msg = e.name === 'AbortError' ? 'タイムアウト — 再試行中...' : 'データ取得失敗 — 再試行中...';
-        document.getElementById('update-bar').children[0].innerHTML =
-          '<span style="color:#c05000;">⚠ ' + msg + '</span>';
-      }
-    }
-
-    async function manualRefresh() {
-      const btn = document.getElementById('refresh-btn');
-      btn.disabled = true;
-      btn.textContent = '取得中...';
-      await fetchLive();
-      btn.disabled = false;
-      btn.textContent = '↻ 更新';
-    }
-
-    fetchLive();
-    setInterval(fetchLive, 5 * 60 * 1000);
+        // 観測点ラベル
+        svg.selectAll('text.stn-label')
+          .data(STATIONS)
+          .join('text')
+          .attr('class', 'stn-label')
+          .attr('x', d => projection([d.lon, d.lat])[0] + 8)
+          .attr('y', d => projection([d.lon, d.lat])[1] + 4)
+          .text(d => d.name);
+      })
+      .catch(e => {
+        svg.append('text')
+          .attr('x', W / 2).attr('y', H / 2)
+          .attr('text-anchor', 'middle')
+          .attr('fill', '#c05000')
+          .text('地図データ読み込み失敗');
+        console.error(e);
+      });
   </script>
 </body>
 </html>
