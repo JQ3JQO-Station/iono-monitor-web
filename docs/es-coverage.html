@@ -99,8 +99,9 @@
         // Japan = 392, Taiwan = 158
         const targets = countries.features.filter(d => [392, 158].includes(+d.id));
 
-        // チルト後の地図にフィットするようスケール・位置を自動計算
+        // チルト後の地図にフィットするようスケール・位置を自動計算し、対角いっぱいに1.4倍拡大
         projection.fitSize([W, H], { type: 'FeatureCollection', features: targets });
+        projection.scale(projection.scale() * 1.4);
 
         // 国土輪郭
         svg.selectAll('path.land')
