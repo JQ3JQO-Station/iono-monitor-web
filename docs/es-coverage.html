@@ -100,7 +100,7 @@
         const targets = countries.features.filter(d => [392, 158].includes(+d.id));
 
         // チルト後の地図をキャンバスより少し広い領域にフィットさせて拡大（端は若干クリップ）
-        const pad = -60;
+        const pad = -30;
         projection.fitExtent([[pad, pad], [W - pad, H - pad]], { type: 'FeatureCollection', features: targets });
 
         // 国土輪郭
