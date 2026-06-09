@@ -83,12 +83,12 @@
       { id: 'ok', name: '大宜味',  lat: 26.6, lon: 128.2 },
     ];
 
-    // lon 124-146°E (22°) を 390px 幅に収めるスケール
-    // scale = 390 / (22 × π/180) ≈ 1016
-    // center = [135, 33.7] (日本中心付近)
+    // lon 118-147°E (29°) を 390px 幅に収めるスケール（台湾を含む）
+    // scale = 390 / (29 × π/180) ≈ 771
+    // center = [132.5, 33.7]
     const projection = d3.geoEquirectangular()
-      .scale(1016)
-      .center([135, 33.7])
+      .scale(771)
+      .center([132.5, 33.7])
       .translate([W / 2, H / 2]);
 
     const geoPath = d3.geoPath().projection(projection);
