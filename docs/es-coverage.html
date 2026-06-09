@@ -85,12 +85,9 @@
       { id: 'ok', name: '大宜味',  lat: 26.6, lon: 128.2 },
     ];
 
-    // ロール回転なし（angle廃止）
-    // center=[133, 35], scale=850 でJapan+台湾を収める
+    // angle(-20) でチルト後、D3のfitSizeで自動スケール計算
     const projection = d3.geoEquirectangular()
-      .scale(850)
-      .center([133, 35])
-      .translate([W / 2, H / 2]);
+      .angle(-20);
 
     const geoPath = d3.geoPath().projection(projection);
     const svg = d3.select('#map');
@@ -101,6 +98,9 @@
         const countries = topojson.feature(world, world.objects.countries);
         // Japan = 392, Taiwan = 158
         const targets = countries.features.filter(d => [392, 158].includes(+d.id));
+
+        // チルト後の地図にフィットするようスケール・位置を自動計算
+        projection.fitSize([W, H], { type: 'FeatureCollection', features: targets });
 
         // 国土輪郭
         svg.selectAll('path.land')
