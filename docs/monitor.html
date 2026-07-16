@@ -219,6 +219,7 @@
     }
     #line-notify-btn:active { filter: brightness(0.88); }
     #line-notify-btn.subscribed { background: #2ecc71; }
+    #line-notify-btn.expired { background: #e08030; }
 
     /* 通知モーダル */
     .notify-modal {
@@ -917,10 +918,22 @@
       return new Uint8Array([...bin].map(c => c.charCodeAt(0)));
     }
 
-    function updateNotifyBtn() {
+    async function updateNotifyBtn() {
       const btn = document.getElementById('line-notify-btn');
       if (!btn) return;
-      if (localStorage.getItem('webpush_subscribed') === '1') {
+      if (localStorage.getItem('webpush_subscribed') !== '1') return;
+      try {
+        const reg = ('serviceWorker' in navigator)
+          ? await navigator.serviceWorker.getRegistration('./sw.js') : null;
+        const swSub = reg ? await reg.pushManager.getSubscription() : null;
+        if (swSub) {
+          btn.classList.add('subscribed');
+          btn.textContent = '✅ 通知登録済み';
+        } else {
+          btn.classList.add('expired');
+          btn.textContent = '⚠ 通知が届かない状態　再登録する';
+        }
+      } catch (e) {
         btn.classList.add('subscribed');
         btn.textContent = '✅ 通知登録済み';
       }

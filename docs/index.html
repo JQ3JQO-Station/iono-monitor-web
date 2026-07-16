@@ -99,6 +99,7 @@
     .btn-line    { background: #06c755; color: #fff; }
     .btn-notify  { background: #e05050; color: #fff; }
     .btn-notify.subscribed { background: #2ecc71; opacity: 0.85; }
+    .btn-notify.expired { background: #e08030; }
 
     /* 通知手順モーダル */
     .notify-modal {
@@ -458,11 +459,23 @@
       return new Uint8Array([...bin].map(c => c.charCodeAt(0)));
     }
 
-    function updateNotifyBtn() {
+    async function updateNotifyBtn() {
       const btn = document.getElementById('notify-btn');
       const sub = document.getElementById('notify-sub');
       if (!btn) return;
-      if (localStorage.getItem('webpush_subscribed') === '1') {
+      if (localStorage.getItem('webpush_subscribed') !== '1') return;
+      try {
+        const reg = ('serviceWorker' in navigator)
+          ? await navigator.serviceWorker.getRegistration('./sw.js') : null;
+        const swSub = reg ? await reg.pushManager.getSubscription() : null;
+        if (swSub) {
+          btn.classList.add('subscribed');
+          sub.textContent = '✅ 通知登録済み';
+        } else {
+          btn.classList.add('expired');
+          sub.textContent = '⚠ 通知が届かない状態　再登録する';
+        }
+      } catch (e) {
         btn.classList.add('subscribed');
         sub.textContent = '✅ 通知登録済み';
       }
