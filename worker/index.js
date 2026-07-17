@@ -77,6 +77,46 @@ export default {
         });
       }
 
+      // テスト送信（全購読者に送り結果を返す）
+      if (action === 'test-push') {
+        try {
+        const subs = await getPushSubscriptions(env);
+        const results = [];
+        const validSubs = [];
+        for (const sub of subs) {
+          const label = sub.endpoint.includes('apple') ? 'Apple' :
+                        sub.endpoint.includes('fcm') ? 'FCM' :
+                        sub.endpoint.includes('mozilla') ? 'Firefox' :
+                        sub.endpoint.includes('windows') ? 'Windows' : 'Other';
+          try {
+            const { ok, status } = await sendWebPush(sub, JSON.stringify({
+              title: '🔔 CB DX Iono Monitor テスト',
+              body: 'テスト通知です（手動送信）',
+              url: 'https://jq3jqo-station.github.io/iono-monitor-web/monitor.html',
+            }), env);
+            results.push({ label, ok, status, ep: sub.endpoint.slice(-20) });
+            if (status !== 410) validSubs.push(sub);
+          } catch (e) {
+            results.push({ label, ok: false, status: 0, error: e.message, ep: sub.endpoint.slice(-20) });
+            validSubs.push(sub); // エラーの場合は残す（鍵不正等の恒久エラーを除外しない）
+          }
+        }
+        if (validSubs.length < subs.length) {
+          await env.IONO_STATE.put('push_subscriptions', JSON.stringify(validSubs));
+        }
+        const ok_count = results.filter(r => r.ok).length;
+        const gone_count = results.filter(r => r.status === 410).length;
+        return new Response(JSON.stringify({ total: subs.length, ok: ok_count, gone_410: gone_count, results }, null, 2), {
+          headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+        });
+        } catch (e) {
+          return new Response(JSON.stringify({ error: e.message, stack: e.stack }), {
+            status: 500,
+            headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+          });
+        }
+      }
+
       // VAPID 公開鍵の提供
       if (action === 'vapid-key') {
         return new Response(JSON.stringify({ publicKey: VAPID_PUBLIC_KEY }), {
@@ -367,14 +407,17 @@ async function sendWebPushAlert(triggered, fxes, names, now, COOLDOWN_MS, env) {
   const validSubs = [];
   for (const sub of subs) {
     try {
-      const ok = await sendWebPush(sub, payload, env);
+      const { ok, status } = await sendWebPush(sub, payload, env);
       if (ok) {
         successCount++;
         validSubs.push(sub);
+      } else if (status === 410) {
+        // 410 Gone = ブラウザ側で購読が削除済み → KVからも除去
+        console.log(`Web Push 410 Gone (removed): ${sub.endpoint.slice(0, 60)}`);
       } else {
-        console.log(`Web Push failed (410 expired?): ${sub.endpoint.slice(0, 60)}`);
-        // 410 Gone = 期限切れ購読は削除済み（sendWebPushで対処）
-        validSubs.push(sub); // 一旦残す（410は別処理）
+        // その他エラーは残す
+        console.log(`Web Push failed HTTP ${status}: ${sub.endpoint.slice(0, 60)}`);
+        validSubs.push(sub);
       }
     } catch (e) {
       console.error('Web Push error:', e.message);
@@ -382,9 +425,15 @@ async function sendWebPushAlert(triggered, fxes, names, now, COOLDOWN_MS, env) {
     }
   }
 
+  // 410で削除された購読があればKVを更新
+  if (validSubs.length < subs.length) {
+    await env.IONO_STATE.put('push_subscriptions', JSON.stringify(validSubs));
+    console.log(`Removed ${subs.length - validSubs.length} expired subscriptions`);
+  }
+
   for (const k of newlyTriggered) wpState.cooldowns[k] = now;
   await env.IONO_STATE.put('webpush_state', JSON.stringify(wpState));
-  console.log(`Web Push sent to ${successCount}/${subs.length} subscribers`);
+  console.log(`Web Push sent to ${successCount}/${subs.length} subscribers (${validSubs.length} remain)`);
 }
 
 // ── Web Push 送信（RFC 8291 / RFC 8292） ───────────────────────
@@ -420,7 +469,7 @@ async function sendWebPush(subscription, payloadStr, env) {
     const text = await res.text().catch(() => '');
     console.error(`Web Push HTTP ${res.status}: ${text.slice(0, 100)}`);
   }
-  return res.ok;
+  return { ok: res.ok, status: res.status };
 }
 
 // ── RFC 8291 ペイロード暗号化 ─────────────────────────────────

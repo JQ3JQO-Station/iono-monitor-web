@@ -952,13 +952,13 @@
       try {
         const reg = await navigator.serviceWorker.register('./sw.js');
         await navigator.serviceWorker.ready;
-        let sub = await reg.pushManager.getSubscription();
-        if (!sub) {
-          sub = await reg.pushManager.subscribe({
-            userVisibleOnly: true,
-            applicationServerKey: urlB64ToUint8(VAPID_KEY),
-          });
-        }
+        // 古い購読を破棄してから新規作成（失効した購読を確実にリセット）
+        const old = await reg.pushManager.getSubscription();
+        if (old) await old.unsubscribe();
+        const sub = await reg.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: urlB64ToUint8(VAPID_KEY),
+        });
         await fetch(WORKER + '?action=subscribe', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
