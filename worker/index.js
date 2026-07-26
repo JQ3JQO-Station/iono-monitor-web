@@ -335,7 +335,7 @@ async function checkAndAlert(env) {
   const names = { ok: '沖縄', yg: '鹿児島', to: '東京', wk: '北海道' };
   const allStations = ['ok', 'yg', 'to', 'wk'];
   const triggered = allStations.filter(k => {
-    const v = parseFloat(fxes[k]); return !isNaN(v) && v >= 6.0;
+    const v = parseFloat(fxes[k]); return !isNaN(v) && v >= 7.0;
   });
 
   const now = Date.now();
@@ -399,7 +399,7 @@ async function sendWebPushAlert(triggered, fxes, names, now, COOLDOWN_MS, env) {
   const detail  = newlyTriggered.map(k => `${names[k]}: ${fxes[k]}`).join(' / ');
   const payload = JSON.stringify({
     title: '⚠ CB DX Iono Monitor',
-    body: `FxEs >= 6.0 検出: ${detail}（${fxes.time ?? '--:--'} JST）`,
+    body: `FxEs >= 7.0 検出: ${detail}（${fxes.time ?? '--:--'} JST）`,
     url: 'https://jq3jqo-station.github.io/iono-monitor-web/monitor.html',
   });
 
