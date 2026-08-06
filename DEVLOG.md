@@ -4,6 +4,19 @@
 
 ---
 
+## 2026-08-07 08:xx — Desktop セッション
+
+- GitHub Actionsから「Update FxEs History workflow run」失敗（cancelled）のメール通知を受け、原因調査を実施
+- 原因: コード側のバグではなく、GitHub Actions ホストランナー側の一時的な障害
+  - `gh run view` のannotationsに `The job was not acquired by Runner of type hosted even after multiple attempts` と記録
+  - 同時間帯（2026-08-06 15:53〜18:04 UTC ≒ 8/7 00:53〜03:04 JST）に `fetch-data.yml` も2回連続失敗しており、単発のワークフロー不具合ではなくGitHub Actions全体の一時的な障害と判断
+  - この間 `docs/data.json` が約10時間更新されていなかった（最終成功: 8/6 13:23 UTC）
+- 対応: `gh workflow run fetch-data.yml` / `gh workflow run update-fxes-history.yml` で手動再実行 → 両方成功、データ復旧済み（コード変更なし）
+- 併せて、同時間帯にdisordeBotのDiscordブリッジも無応答だった件を調査。原因はDiscordブリッジ(server.ts)がClaude Desktopアプリ起動中のみ動作する仕様のため、アプリ未起動中に届いたメッセージに応答できなかっただけ（インフラ障害とは無関係、コード修正不要）
+- 再発した場合は `gh run list --workflow=<name>.yml` で failure/cancelled が続いていないか確認し、GitHub側の障害なら手動再実行で復旧可能
+
+---
+
 ## 2026-05-31 10:17 — Discord セッション（新規プロジェクト：CBノイズ軽減ユニット）
 
 - 新規ハードウェアプロジェクト：CBラジオ用パッシブノイズ軽減ユニットの設計
